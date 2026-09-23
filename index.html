@@ -1,0 +1,1484 @@
+<!DOCTYPE html>
+<html lang="ru" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Семейный Бюджет | Швеция (SEK)</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        slate: {
+                            850: '#131b2e',
+                            950: '#090d16',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #090d16;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1e293b;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #334155;
+        }
+        .glass-card {
+            background: rgba(26, 36, 56, 0.75);
+            backdrop-filter: blur(14px);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased selection:bg-cyan-500 selection:text-slate-950">
+
+    <div id="app" class="max-w-7xl mx-auto p-3 sm:p-6 space-y-6">
+
+        <!-- HEADER -->
+        <header class="flex flex-col md:flex-row md:items-center justify-between gap-4 glass-card p-4 sm:p-5 rounded-2xl shadow-2xl">
+            <div class="flex items-center gap-3">
+                <div class="p-3 bg-gradient-to-tr from-cyan-500 to-blue-600 rounded-xl text-slate-950 font-bold shadow-lg shadow-cyan-500/20">
+                    <i data-lucide="home" class="w-7 h-7"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 class="text-xl sm:text-2xl font-black tracking-tight bg-gradient-to-r from-white via-slate-200 to-cyan-200 bg-clip-text text-transparent">
+                            Семейный Бюджет <span class="text-cyan-400 font-semibold text-base sm:text-lg ml-1">(SEK)</span>
+                        </h1>
+                    </div>
+                    <p class="text-xs text-slate-400 font-medium flex items-center gap-1 mt-0.5">
+                        <span>Учет расходов пары • Швеция 🇸🇪</span>
+                        <span id="syncStatusBadge" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                            <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span> Локально
+                        </span>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Top Action Buttons -->
+            <div class="flex flex-wrap items-center gap-2">
+                <button onclick="openRoomModal()" class="flex items-center gap-2 px-3 py-2 text-xs font-bold rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 active:scale-95 transition-all">
+                    <i data-lucide="wifi" class="w-4 h-4"></i>
+                    <span>Код семьи: <strong id="headerRoomCodeDisplay" class="underline">demo-room</strong></span>
+                </button>
+                <button onclick="openSettingsModal()" class="flex items-center gap-2 px-3 py-2 text-xs font-semibold rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700/60 active:scale-95 transition-all">
+                    <i data-lucide="users" class="w-4 h-4 text-purple-400"></i>
+                    <span>Имена членов семьи</span>
+                </button>
+                <button onclick="openExportModal()" class="flex items-center gap-2 px-3 py-2 text-xs font-semibold rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700/60 active:scale-95 transition-all">
+                    <i data-lucide="download-cloud" class="w-4 h-4 text-emerald-400"></i>
+                    <span>Экспорт / Импорт</span>
+                </button>
+                <button onclick="openResetModal()" class="flex items-center gap-2 px-3 py-2 text-xs font-semibold rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700/60 active:scale-95 transition-all">
+                    <i data-lucide="rotate-ccw" class="w-4 h-4 text-amber-400"></i>
+                    <span>Демо-данные</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- NAVIGATION TABS -->
+        <nav class="flex p-1.5 bg-slate-900/90 rounded-2xl border border-slate-800 gap-1.5 shadow-inner overflow-x-auto">
+            <button id="tab-family" onclick="switchTab('family')" 
+                class="flex-1 min-w-[160px] py-3 px-4 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all duration-200 bg-cyan-500 text-slate-950 shadow-lg shadow-cyan-500/20">
+                <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+                <span>🏠 Общий семейный бюджет</span>
+            </button>
+            <button id="tab-p1" onclick="switchTab('p1')" 
+                class="flex-1 min-w-[140px] py-3 px-4 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all duration-200 text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
+                <i data-lucide="user" class="w-4 h-4 text-cyan-400"></i>
+                <span id="label-tab-p1">Антон</span>
+            </button>
+            <button id="tab-p2" onclick="switchTab('p2')" 
+                class="flex-1 min-w-[140px] py-3 px-4 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all duration-200 text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
+                <i data-lucide="user-check" class="w-4 h-4 text-purple-400"></i>
+                <span id="label-tab-p2">Мария</span>
+            </button>
+        </nav>
+
+        <!-- VIEW 1: FAMILY DASHBOARD VIEW -->
+        <div id="view-family" class="space-y-6">
+            
+            <!-- Summary Stats Cards -->
+            <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- Total Family Income -->
+                <div class="glass-card p-5 rounded-2xl border-l-4 border-l-emerald-500 flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Общий доход семьи</p>
+                        <h3 id="family-stat-income" class="text-2xl font-black text-emerald-400 tracking-tight mt-1">0 kr</h3>
+                        <p class="text-[11px] text-slate-400 mt-1 flex items-center gap-1">
+                            <i data-lucide="trending-up" class="w-3.5 h-3.5 text-emerald-400"></i>
+                            <span>Суммарно оба партнера</span>
+                        </p>
+                    </div>
+                    <div class="p-3 bg-emerald-500/10 rounded-xl text-emerald-400">
+                        <i data-lucide="arrow-down-left" class="w-6 h-6"></i>
+                    </div>
+                </div>
+
+                <!-- Total Family Expenses -->
+                <div class="glass-card p-5 rounded-2xl border-l-4 border-l-rose-500 flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Общий расход семьи</p>
+                        <h3 id="family-stat-expenses" class="text-2xl font-black text-rose-400 tracking-tight mt-1">0 kr</h3>
+                        <p class="text-[11px] text-slate-400 mt-1 flex items-center gap-1">
+                            <i data-lucide="trending-down" class="w-3.5 h-3.5 text-rose-400"></i>
+                            <span>Все семейные траты</span>
+                        </p>
+                    </div>
+                    <div class="p-3 bg-rose-500/10 rounded-xl text-rose-400">
+                        <i data-lucide="arrow-up-right" class="w-6 h-6"></i>
+                    </div>
+                </div>
+
+                <!-- Net Family Balance -->
+                <div class="glass-card p-5 rounded-2xl border-l-4 border-l-cyan-500 flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Остаток семьи</p>
+                        <h3 id="family-stat-balance" class="text-2xl font-black text-slate-100 tracking-tight mt-1">0 kr</h3>
+                        <p class="text-[11px] text-slate-400 mt-1 flex items-center gap-1">
+                            <i data-lucide="scale" class="w-3.5 h-3.5 text-cyan-400"></i>
+                            <span>Чистый баланс месяца</span>
+                        </p>
+                    </div>
+                    <div class="p-3 bg-cyan-500/10 rounded-xl text-cyan-400">
+                        <i data-lucide="wallet" class="w-6 h-6"></i>
+                    </div>
+                </div>
+
+                <!-- Savings Rate (Spargrad %) -->
+                <div class="glass-card p-5 rounded-2xl border-l-4 border-l-amber-500 flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Норма сбережений (Spargrad)</p>
+                        <h3 id="family-stat-savings-rate" class="text-2xl font-black text-amber-400 tracking-tight mt-1">0%</h3>
+                        <p class="text-[11px] text-slate-400 mt-1 flex items-center gap-1">
+                            <i data-lucide="piggy-bank" class="w-3.5 h-3.5 text-amber-400"></i>
+                            <span>Доля сохраненного бюджета</span>
+                        </p>
+                    </div>
+                    <div class="p-3 bg-amber-500/10 rounded-xl text-amber-400">
+                        <i data-lucide="percent" class="w-6 h-6"></i>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Partner Breakdown Contribution Strip -->
+            <section class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="glass-card p-4 rounded-2xl border border-cyan-500/20 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 font-bold">
+                            P1
+                        </div>
+                        <div>
+                            <h4 id="card-p1-title" class="font-bold text-sm text-slate-200">Антон</h4>
+                            <p id="card-p1-sub" class="text-xs text-slate-400">Расходы: 0 kr • Доходы: 0 kr</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <span id="card-p1-share" class="text-xs font-bold text-cyan-400 bg-cyan-500/10 px-2.5 py-1 rounded-full border border-cyan-500/20">0% расходов</span>
+                    </div>
+                </div>
+
+                <div class="glass-card p-4 rounded-2xl border border-purple-500/20 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400 font-bold">
+                            P2
+                        </div>
+                        <div>
+                            <h4 id="card-p2-title" class="font-bold text-sm text-slate-200">Мария</h4>
+                            <p id="card-p2-sub" class="text-xs text-slate-400">Расходы: 0 kr • Доходы: 0 kr</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <span id="card-p2-share" class="text-xs font-bold text-purple-400 bg-purple-500/10 px-2.5 py-1 rounded-full border border-purple-500/20">0% расходов</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Family Charts Section -->
+            <section class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Doughnut Chart: Family Expense Categories -->
+                <div class="lg:col-span-5 glass-card p-5 rounded-2xl flex flex-col justify-between">
+                    <div class="flex items-center justify-between mb-2">
+                        <h2 class="font-bold text-slate-200 text-sm flex items-center gap-2">
+                            <i data-lucide="pie-chart" class="w-4 h-4 text-cyan-400"></i>
+                            Расходы семьи по категориям
+                        </h2>
+                    </div>
+                    <div class="relative min-h-[250px] flex items-center justify-center my-auto">
+                        <canvas id="familyCategoryChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Grouped Bar Chart: Partner 1 vs Partner 2 Comparison -->
+                <div class="lg:col-span-7 glass-card p-5 rounded-2xl flex flex-col justify-between">
+                    <div class="flex items-center justify-between mb-2">
+                        <h2 class="font-bold text-slate-200 text-sm flex items-center gap-2">
+                            <i data-lucide="bar-chart-2" class="w-4 h-4 text-purple-400"></i>
+                            Сравнение трат партнеров по категориям
+                        </h2>
+                    </div>
+                    <div class="relative min-h-[250px] flex items-center justify-center my-auto">
+                        <canvas id="partnerComparisonChart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Unified Family Transactions Feed -->
+            <section class="glass-card p-5 rounded-2xl space-y-4">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="list" class="w-5 h-5 text-cyan-400"></i>
+                        <h2 class="font-bold text-slate-200">Общий список транзакций семьи</h2>
+                        <span id="family-count-badge" class="px-2 py-0.5 text-xs bg-slate-800 text-slate-400 rounded-full border border-slate-700">0</span>
+                    </div>
+
+                    <!-- Filters -->
+                    <div class="flex flex-wrap items-center gap-2">
+                        <div class="relative flex-1 sm:w-40">
+                            <i data-lucide="search" class="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"></i>
+                            <input type="text" id="familyFilterSearch" oninput="renderAll()" placeholder="Поиск..." 
+                                class="w-full pl-8 pr-3 py-1.5 bg-slate-900 border border-slate-700/80 rounded-xl text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-500">
+                        </div>
+
+                        <select id="familyFilterUser" onchange="renderAll()" 
+                            class="px-3 py-1.5 bg-slate-900 border border-slate-700/80 rounded-xl text-xs text-slate-300 focus:outline-none focus:border-cyan-500">
+                            <option value="all">Все члены семьи</option>
+                            <option value="p1" id="filter-user-p1">Антон</option>
+                            <option value="p2" id="filter-user-p2">Мария</option>
+                        </select>
+
+                        <select id="familyFilterCategory" onchange="renderAll()" 
+                            class="px-3 py-1.5 bg-slate-900 border border-slate-700/80 rounded-xl text-xs text-slate-300 focus:outline-none focus:border-cyan-500">
+                            <option value="all">Все категории</option>
+                        </select>
+
+                        <select id="familyFilterMonth" onchange="renderAll()" 
+                            class="px-3 py-1.5 bg-slate-900 border border-slate-700/80 rounded-xl text-xs text-slate-300 focus:outline-none focus:border-cyan-500">
+                            <option value="all">За всё время</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="familyTransactionList" class="space-y-2 max-h-[480px] overflow-y-auto pr-1">
+                    <!-- Populated dynamically -->
+                </div>
+            </section>
+        </div>
+
+        <!-- VIEW 2 & 3: PERSONAL PARTNER VIEWS (DYNAMICALLY TARGETED) -->
+        <div id="view-personal" class="space-y-6 hidden">
+            
+            <!-- Personal Summary Banner -->
+            <section class="glass-card p-5 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 border-t-4" id="personal-banner-border">
+                <div class="flex items-center gap-3">
+                    <div id="personal-avatar" class="w-12 h-12 rounded-xl flex items-center justify-center font-bold text-lg">
+                        P
+                    </div>
+                    <div>
+                        <h2 id="personal-title" class="text-xl font-black text-slate-100">Персональный кабинет</h2>
+                        <p class="text-xs text-slate-400">Управление личным бюджетом и внесение операционных трат</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-6">
+                    <div>
+                        <p class="text-[11px] uppercase tracking-wider text-slate-400 font-semibold">Доходы</p>
+                        <p id="personal-stat-income" class="text-base font-bold text-emerald-400">0 kr</p>
+                    </div>
+                    <div class="w-px h-8 bg-slate-800"></div>
+                    <div>
+                        <p class="text-[11px] uppercase tracking-wider text-slate-400 font-semibold">Расходы</p>
+                        <p id="personal-stat-expense" class="text-base font-bold text-rose-400">0 kr</p>
+                    </div>
+                    <div class="w-px h-8 bg-slate-800"></div>
+                    <div>
+                        <p class="text-[11px] uppercase tracking-wider text-slate-400 font-semibold">Баланс</p>
+                        <p id="personal-stat-balance" class="text-base font-bold text-slate-100">0 kr</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Form & Personal Transactions Grid -->
+            <section class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                
+                <!-- Add/Edit Transaction Form -->
+                <div class="lg:col-span-5 glass-card p-5 rounded-2xl space-y-4 h-fit">
+                    <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="plus-circle" class="w-5 h-5 text-cyan-400"></i>
+                            <h3 id="form-title" class="font-bold text-slate-200">Добавить операцию</h3>
+                        </div>
+                        <span id="activeUserFormBadge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
+                            Антон
+                        </span>
+                    </div>
+
+                    <form id="transactionForm" onsubmit="handleFormSubmit(event)" class="space-y-4">
+                        <!-- Type selector -->
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-400 mb-1.5">Тип операции</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                <button type="button" id="btn-type-expense" onclick="setFormType('expense')" 
+                                    class="py-2 px-3 text-xs font-bold rounded-xl border flex items-center justify-center gap-2 transition-all bg-rose-500/20 text-rose-300 border-rose-500/50">
+                                    <i data-lucide="arrow-up-right" class="w-4 h-4"></i> Расход
+                                </button>
+                                <button type="button" id="btn-type-income" onclick="setFormType('income')" 
+                                    class="py-2 px-3 text-xs font-bold rounded-xl border flex items-center justify-center gap-2 transition-all bg-slate-800/80 text-slate-400 border-slate-700 hover:bg-slate-700">
+                                    <i data-lucide="arrow-down-left" class="w-4 h-4"></i> Доход
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Amount in SEK -->
+                        <div>
+                            <label for="txAmount" class="block text-xs font-semibold text-slate-400 mb-1">Сумма в кронах (SEK / kr)</label>
+                            <div class="relative">
+                                <input type="number" id="txAmount" required min="1" step="any" placeholder="например: 450" 
+                                    class="w-full pl-3.5 pr-10 py-2.5 bg-slate-900 border border-slate-700/80 rounded-xl text-sm font-bold text-slate-100 placeholder-slate-600 focus:outline-none focus:border-cyan-500">
+                                <span class="absolute right-3 top-2.5 text-xs font-bold text-slate-500">kr</span>
+                            </div>
+                        </div>
+
+                        <!-- Description/Store -->
+                        <div>
+                            <label for="txTitle" class="block text-xs font-semibold text-slate-400 mb-1">Магазин / Назначение</label>
+                            <input type="text" id="txTitle" required placeholder="например: ICA Maxi, Willys, SL, Hyra" 
+                                class="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700/80 rounded-xl text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-cyan-500">
+                        </div>
+
+                        <!-- Category & Date Grid with INLINE NEW CATEGORY TRIGGER -->
+                        <div class="space-y-3">
+                            <div>
+                                <div class="flex items-center justify-between mb-1">
+                                    <label for="txCategory" class="block text-xs font-semibold text-slate-400">Категория</label>
+                                    <button type="button" onclick="openNewCategoryModal()" class="text-[11px] font-bold text-cyan-400 hover:text-cyan-300 flex items-center gap-1 transition-colors">
+                                        <i data-lucide="folder-plus" class="w-3.5 h-3.5"></i>
+                                        <span>+ Новая категория</span>
+                                    </button>
+                                </div>
+                                <div class="flex gap-2">
+                                    <select id="txCategory" required onchange="handleCategorySelectChange(this.value)"
+                                        class="w-full px-3 py-2.5 bg-slate-900 border border-slate-700/80 rounded-xl text-xs text-slate-100 focus:outline-none focus:border-cyan-500">
+                                        <!-- Dynamic options populated by JS -->
+                                    </select>
+                                    <button type="button" onclick="openNewCategoryModal()" title="Добавить новую категорию" 
+                                        class="px-3 py-2.5 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 rounded-xl text-xs font-bold flex items-center gap-1 active:scale-95 transition-all flex-shrink-0">
+                                        <i data-lucide="plus" class="w-4 h-4"></i>
+                                        <span class="hidden sm:inline">Новая</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label for="txDate" class="block text-xs font-semibold text-slate-400 mb-1">Дата</label>
+                                <input type="date" id="txDate" required 
+                                    class="w-full px-3 py-2 bg-slate-900 border border-slate-700/80 rounded-xl text-xs text-slate-100 focus:outline-none focus:border-cyan-500">
+                            </div>
+                        </div>
+
+                        <!-- Submit Buttons -->
+                        <div class="flex gap-2 pt-2">
+                            <button type="submit" id="btn-submit-tx" 
+                                class="flex-1 py-2.5 px-4 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-cyan-500/20 active:scale-95 transition-all flex items-center justify-center gap-2">
+                                <i data-lucide="check" class="w-4 h-4"></i>
+                                <span>Сохранить запись</span>
+                            </button>
+                            <button type="button" id="btn-cancel-edit" onclick="cancelEdit()" style="display: none;" 
+                                class="py-2.5 px-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs rounded-xl">
+                                Отмена
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Personal Transactions Log -->
+                <div class="lg:col-span-7 glass-card p-5 rounded-2xl space-y-4 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+                            <h3 class="font-bold text-slate-200 text-sm flex items-center gap-2">
+                                <i data-lucide="history" class="w-4 h-4 text-cyan-400"></i>
+                                Личные транзакции
+                            </h3>
+                            <span id="personal-count-badge" class="px-2 py-0.5 text-xs bg-slate-800 text-slate-400 rounded-full border border-slate-700">0</span>
+                        </div>
+
+                        <div id="personalTransactionList" class="mt-4 space-y-2 max-h-[420px] overflow-y-auto pr-1">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+
+            </section>
+        </div>
+
+    </div>
+
+    <!-- MODALS -->
+
+    <!-- Quick Inline New Category Modal -->
+    <div id="newCategoryModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="glass-card max-w-md w-full p-6 rounded-2xl space-y-4 border border-cyan-500/30 shadow-2xl">
+            <div class="flex justify-between items-center pb-2 border-b border-slate-800">
+                <h3 class="font-bold text-lg text-slate-100 flex items-center gap-2">
+                    <i data-lucide="folder-plus" class="w-5 h-5 text-cyan-400"></i> Создать новую категорию
+                </h3>
+                <button onclick="closeNewCategoryModal()" class="text-slate-400 hover:text-slate-200">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            
+            <form onsubmit="handleCreateCategorySubmit(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-1">Название категории</label>
+                    <input type="text" id="newCatName" required placeholder="например: Möbler, Hobby, Ремонт" 
+                        class="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-cyan-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-1">Тип операции</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <label class="p-2.5 rounded-xl border border-slate-700 bg-slate-900 flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-300 hover:border-slate-600">
+                            <input type="radio" name="newCatType" value="expense" checked class="accent-rose-500">
+                            <span>Расход</span>
+                        </label>
+                        <label class="p-2.5 rounded-xl border border-slate-700 bg-slate-900 flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-300 hover:border-slate-600">
+                            <input type="radio" name="newCatType" value="income" class="accent-emerald-500">
+                            <span>Доход</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-1.5">Выберите эмодзи-иконку</label>
+                    <div class="grid grid-cols-8 gap-1.5 p-2 bg-slate-900 rounded-xl border border-slate-800 max-h-32 overflow-y-auto" id="emojiPickerGrid">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+
+                <div class="flex gap-2 pt-2">
+                    <button type="button" onclick="closeNewCategoryModal()" class="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl">
+                        Отмена
+                    </button>
+                    <button type="submit" class="flex-1 py-2.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-cyan-500/20 transition-all">
+                        Сохранить и выбрать
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Family Room Code Sync Modal -->
+    <div id="roomModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="glass-card max-w-md w-full p-6 rounded-2xl space-y-4 border border-cyan-500/40 shadow-2xl">
+            <div class="flex justify-between items-center pb-2 border-b border-slate-800">
+                <h3 class="font-bold text-lg text-slate-100 flex items-center gap-2">
+                    <i data-lucide="wifi" class="w-5 h-5 text-cyan-400"></i> Код семьи (Синхронизация)
+                </h3>
+                <button onclick="closeRoomModal()" class="text-slate-400 hover:text-slate-200">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            
+            <p class="text-xs text-slate-400 leading-relaxed">
+                Введите одинаковый **Код семьи** на вашем компьютере и телефоне вашей жены. Все транзакции и новые категории будут обновляться автоматически на обоих экранах!
+            </p>
+
+            <div class="space-y-3">
+                <div>
+                    <label for="inputRoomCode" class="block text-xs font-semibold text-slate-400 mb-1">Секретный код семьи</label>
+                    <input type="text" id="inputRoomCode" placeholder="например: umea-2026" 
+                        class="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-sm font-bold text-cyan-400 placeholder-slate-600 focus:outline-none focus:border-cyan-500">
+                </div>
+            </div>
+
+            <div class="flex gap-2 pt-2">
+                <button onclick="saveRoomCode()" class="w-full py-2.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs rounded-xl shadow-lg transition-all">
+                    Подключиться и синхронизировать
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Partner Names Settings Modal -->
+    <div id="settingsModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="glass-card max-w-md w-full p-6 rounded-2xl space-y-4 border border-slate-700 shadow-2xl">
+            <div class="flex justify-between items-center pb-2 border-b border-slate-800">
+                <h3 class="font-bold text-lg text-slate-100 flex items-center gap-2">
+                    <i data-lucide="user-cog" class="w-5 h-5 text-purple-400"></i> Имена членов семьи
+                </h3>
+                <button onclick="closeSettingsModal()" class="text-slate-400 hover:text-slate-200">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-3">
+                <div>
+                    <label for="input-p1-name" class="block text-xs font-semibold text-slate-400 mb-1">Имя Партнера 1 (Муж / Он)</label>
+                    <input type="text" id="input-p1-name" class="w-full px-3.5 py-2 bg-slate-900 border border-slate-700 rounded-xl text-sm text-slate-100 focus:outline-none focus:border-cyan-500">
+                </div>
+                <div>
+                    <label for="input-p2-name" class="block text-xs font-semibold text-slate-400 mb-1">Имя Партнера 2 (Жена / Она)</label>
+                    <input type="text" id="input-p2-name" class="w-full px-3.5 py-2 bg-slate-900 border border-slate-700 rounded-xl text-sm text-slate-100 focus:outline-none focus:border-cyan-500">
+                </div>
+            </div>
+
+            <div class="flex gap-2 pt-2">
+                <button onclick="savePartnerNames()" class="w-full py-2.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs rounded-xl shadow-lg transition-all">
+                    Сохранить изменения
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export / Import Modal -->
+    <div id="exportModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="glass-card max-w-md w-full p-6 rounded-2xl space-y-4 border border-slate-700 shadow-2xl">
+            <div class="flex justify-between items-center pb-2 border-b border-slate-800">
+                <h3 class="font-bold text-lg text-slate-100 flex items-center gap-2">
+                    <i data-lucide="database" class="w-5 h-5 text-emerald-400"></i> Экспорт / Импорт
+                </h3>
+                <button onclick="closeExportModal()" class="text-slate-400 hover:text-slate-200">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            
+            <p class="text-xs text-slate-400 leading-relaxed">
+                Сохраните полную резервную копию семейного бюджета в JSON файл или загрузите ранее сохраненный бэкап.
+            </p>
+
+            <div class="space-y-3 pt-2">
+                <button onclick="exportDataJSON()" class="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs rounded-xl flex items-center justify-center gap-2 transition-all">
+                    <i data-lucide="download" class="w-4 h-4"></i> Скачать JSON бэкап
+                </button>
+                
+                <label class="w-full py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs rounded-xl flex items-center justify-center gap-2 cursor-pointer border border-slate-700 transition-all">
+                    <i data-lucide="upload" class="w-4 h-4 text-cyan-400"></i> Загрузить JSON
+                    <input type="file" id="importFile" accept=".json" onchange="importDataJSON(event)" class="hidden">
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div id="confirmModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="glass-card max-w-sm w-full p-6 rounded-2xl space-y-4 border border-slate-700 text-center">
+            <div class="w-12 h-12 bg-rose-500/10 text-rose-400 rounded-full flex items-center justify-center mx-auto">
+                <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+            </div>
+            <h3 id="confirmTitle" class="font-bold text-lg text-slate-100">Подтверждение</h3>
+            <p id="confirmMessage" class="text-xs text-slate-400">Вы уверены?</p>
+            <div class="flex gap-2 pt-2">
+                <button onclick="closeConfirmModal()" class="flex-1 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl">
+                    Отмена
+                </button>
+                <button id="confirmBtnAction" onclick="executeConfirmAction()" class="flex-1 py-2 bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold rounded-xl">
+                    Подтвердить
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- FIREBASE MODULE & APPLICATION LOGIC -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // APP CONSTANTS & FIREBASE INIT
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'swedish-family-budget-app';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+            apiKey: "demo-api-key",
+            authDomain: "demo-app.firebaseapp.com",
+            projectId: "demo-app",
+            storageBucket: "demo-app.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "1:123456789:web:abcdef123456"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // DEFAULT CATEGORIES
+        const DEFAULT_CATEGORIES = {
+            salary: { name: 'Lön / Зарплата', color: '#10b981', icon: 'wallet', type: 'income', emoji: '💰' },
+            barnbidrag: { name: 'Barnbidrag / Пособие', color: '#06b6d4', icon: 'baby', type: 'income', emoji: '👶' },
+            other_inc: { name: 'Övrigt / Прочий доход', color: '#3b82f6', icon: 'arrow-down-circle', type: 'income', emoji: '💵' },
+            
+            housing: { name: 'Boende / Жилье (Hyra)', color: '#6366f1', icon: 'home', type: 'expense', emoji: '🏠' },
+            products: { name: 'Mat (ICA, Willys, Coop)', color: '#f59e0b', icon: 'shopping-cart', type: 'expense', emoji: '🛒' },
+            transport: { name: 'Transport (SL, Drivmedel)', color: '#3b82f6', icon: 'car', type: 'expense', emoji: '🚗' },
+            utility: { name: 'El & Bredband / Коммуналка', color: '#eab308', icon: 'zap', type: 'expense', emoji: '⚡' },
+            insurance: { name: 'Försäkringar (Folksam)', color: '#f43f5e', icon: 'shield-check', type: 'expense', emoji: '🛡️' },
+            kids: { name: 'Barn & Skola / Дети', color: '#ec4899', icon: 'smile', type: 'expense', emoji: '🧸' },
+            fika: { name: 'Mat ute & Nöjen (Fika)', color: '#a855f7', icon: 'coffee', type: 'expense', emoji: '☕' },
+            savings: { name: 'Sparande / ISK', color: '#14b8a6', icon: 'trending-up', type: 'expense', emoji: '📈' },
+            shopping: { name: 'Shopping & Övrigt', color: '#64748b', icon: 'shopping-bag', type: 'expense', emoji: '🛍️' }
+        };
+
+        const EMOJI_OPTIONS = ['🛒', '🏠', '🚗', '⚡', '🛡️', '🧸', '☕', '📈', '🛍️', '💰', '👶', '💵', '🏋️', '✈️', '🐾', '🎮', '🎁', '🔧', '💊', '📚', '👗', '🚲', '🍕', '🍿'];
+
+        function getRecentDate(offsetDays) {
+            const d = new Date();
+            d.setDate(d.getDate() - offsetDays);
+            return d.toISOString().split('T')[0];
+        }
+
+        const DEMO_TRANSACTIONS = [
+            { id: 'tx_1', user: 'p1', title: 'Зарплата (Lön efter skatt)', amount: 36000, type: 'income', category: 'salary', date: getRecentDate(1) },
+            { id: 'tx_2', user: 'p1', title: 'Аренда квартиры (Hyra)', amount: 12500, type: 'expense', category: 'housing', date: getRecentDate(2) },
+            { id: 'tx_3', user: 'p1', title: 'Покупки в ICA Maxi', amount: 2450, type: 'expense', category: 'products', date: getRecentDate(3) },
+            { id: 'tx_4', user: 'p1', title: 'Электричество (Vattenfall)', amount: 1100, type: 'expense', category: 'utility', date: getRecentDate(4) },
+            { id: 'tx_5', user: 'p1', title: 'Пополнение ISK (Avanza)', amount: 4000, type: 'expense', category: 'savings', date: getRecentDate(5) },
+            { id: 'tx_6', user: 'p1', title: 'Fika в Espresso House', amount: 320, type: 'expense', category: 'fika', date: getRecentDate(6) },
+            { id: 'tx_7', user: 'p2', title: 'Зарплата (Lön efter skatt)', amount: 33000, type: 'income', category: 'salary', date: getRecentDate(1) },
+            { id: 'tx_8', user: 'p2', title: 'Детские пособия (Barnbidrag)', amount: 1250, type: 'income', category: 'barnbidrag', date: getRecentDate(1) },
+            { id: 'tx_9', user: 'p2', title: 'Продукты в Willys', amount: 1850, type: 'expense', category: 'products', date: getRecentDate(3) },
+            { id: 'tx_10', user: 'p2', title: 'Оплата Förskola', amount: 1600, type: 'expense', category: 'kids', date: getRecentDate(5) },
+            { id: 'tx_11', user: 'p2', title: 'Страховка Folksam', amount: 750, type: 'expense', category: 'insurance', date: getRecentDate(7) },
+            { id: 'tx_12', user: 'p2', title: 'Проездной SL Månadsbiljett', amount: 1020, type: 'expense', category: 'transport', date: getRecentDate(8) }
+        ];
+
+        // GLOBAL APP STATE
+        window.AppState = {
+            roomCode: localStorage.getItem('se_family_room_code') || 'demo-room',
+            settings: { p1Name: 'Антон', p2Name: 'Мария' },
+            categories: { ...DEFAULT_CATEGORIES },
+            transactions: [...DEMO_TRANSACTIONS],
+            currentTab: 'family',
+            currentFormType: 'expense',
+            selectedEmoji: '🛍️',
+            editingId: null,
+            pendingAction: null,
+            unsubListener: null,
+            isCloudConnected: false,
+            user: null
+        };
+
+        let familyChartInstance = null;
+        let partnerComparisonChartInstance = null;
+
+        // FIREBASE AUTH & REALTIME SYNC
+        async function initFirebase() {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    const userCred = await signInWithCustomToken(auth, __initial_auth_token);
+                    window.AppState.user = userCred.user;
+                } else {
+                    const userCred = await signInAnonymously(auth);
+                    window.AppState.user = userCred.user;
+                }
+                setupFirestoreRealtimeSync();
+            } catch (err) {
+                console.warn('Firebase connection notice:', err);
+                updateSyncBadge(false);
+            }
+        }
+
+        function setupFirestoreRealtimeSync() {
+            if (window.AppState.unsubListener) {
+                window.AppState.unsubListener();
+            }
+
+            const roomCode = window.AppState.roomCode.toLowerCase().trim();
+            document.getElementById('headerRoomCodeDisplay').textContent = roomCode;
+
+            // RULE 1 Strict Path: /artifacts/{appId}/public/data/{collectionName}/{docId}
+            const roomDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'family_rooms', roomCode);
+
+            window.AppState.unsubListener = onSnapshot(roomDocRef, (snapshot) => {
+                if (snapshot.exists()) {
+                    const data = snapshot.data();
+                    if (data.transactions) window.AppState.transactions = data.transactions;
+                    if (data.categories) window.AppState.categories = { ...DEFAULT_CATEGORIES, ...data.categories };
+                    if (data.settings) window.AppState.settings = data.settings;
+                    
+                    updatePartnerLabels();
+                    populateCategoryDropdowns();
+                    renderAll();
+                    updateSyncBadge(true);
+                } else {
+                    // Document doesn't exist yet, push local state to create room
+                    pushStateToFirestore();
+                    updateSyncBadge(true);
+                }
+            }, (error) => {
+                console.error("Firestore sync error:", error);
+                updateSyncBadge(false);
+            });
+        }
+
+        async function pushStateToFirestore() {
+            if (!window.AppState.user) return;
+            const roomCode = window.AppState.roomCode.toLowerCase().trim();
+            const roomDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'family_rooms', roomCode);
+
+            try {
+                await setDoc(roomDocRef, {
+                    transactions: window.AppState.transactions,
+                    categories: window.AppState.categories,
+                    settings: window.AppState.settings,
+                    updatedAt: new Date().toISOString()
+                }, { merge: true });
+                updateSyncBadge(true);
+            } catch (e) {
+                console.warn("Save to Firestore failed:", e);
+                updateSyncBadge(false);
+            }
+        }
+
+        function updateSyncBadge(connected) {
+            window.AppState.isCloudConnected = connected;
+            const badge = document.getElementById('syncStatusBadge');
+            if (connected) {
+                badge.className = "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
+                badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Синхронно`;
+            } else {
+                badge.className = "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20";
+                badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span> Локально`;
+            }
+        }
+
+        // CATEGORY CREATION & DROPDOWN MANAGEMENT
+        window.openNewCategoryModal = function() {
+            renderEmojiPicker();
+            document.getElementById('newCategoryModal').classList.remove('hidden');
+        };
+
+        window.closeNewCategoryModal = function() {
+            document.getElementById('newCategoryModal').classList.add('hidden');
+            document.getElementById('newCatName').value = '';
+        };
+
+        function renderEmojiPicker() {
+            const grid = document.getElementById('emojiPickerGrid');
+            grid.innerHTML = EMOJI_OPTIONS.map(emoji => `
+                <button type="button" onclick="selectEmoji('${emoji}')" 
+                    class="emoji-btn p-2 text-base rounded-xl hover:bg-slate-800 transition-all ${window.AppState.selectedEmoji === emoji ? 'bg-cyan-500/20 border border-cyan-500' : ''}">
+                    ${emoji}
+                </button>
+            `).join('');
+        }
+
+        window.selectEmoji = function(emoji) {
+            window.AppState.selectedEmoji = emoji;
+            renderEmojiPicker();
+        };
+
+        window.handleCategorySelectChange = function(val) {
+            if (val === '__NEW__') {
+                openNewCategoryModal();
+            }
+        };
+
+        window.handleCreateCategorySubmit = function(e) {
+            e.preventDefault();
+            const name = document.getElementById('newCatName').value.trim();
+            const type = document.querySelector('input[name="newCatType"]:checked').value;
+            
+            if (!name) return;
+
+            const catKey = 'cat_' + Date.now();
+            const newCat = {
+                name: name,
+                color: type === 'expense' ? '#f43f5e' : '#10b981',
+                icon: 'folder',
+                type: type,
+                emoji: window.AppState.selectedEmoji || '🛍️'
+            };
+
+            window.AppState.categories[catKey] = newCat;
+
+            // Set form type to match new category
+            setFormType(type);
+            populateCategoryDropdowns();
+
+            // Select newly created category in the transaction form
+            document.getElementById('txCategory').value = catKey;
+
+            closeNewCategoryModal();
+            saveAndSync();
+            showToast(`Категория "${name}" создана и выбрана!`);
+        };
+
+        function populateCategoryDropdowns() {
+            const txCat = document.getElementById('txCategory');
+            const famCat = document.getElementById('familyFilterCategory');
+            const cats = window.AppState.categories;
+
+            const activeFormType = window.AppState.currentFormType;
+
+            // Populate form dropdown
+            const options = Object.keys(cats)
+                .filter(k => cats[k].type === activeFormType)
+                .map(k => `<option value="${k}">${cats[k].emoji ? cats[k].emoji + ' ' : ''}${cats[k].name}</option>`);
+
+            options.push(`<option value="__NEW__" class="font-bold text-cyan-400">+ Создать новую категорию...</option>`);
+            txCat.innerHTML = options.join('');
+
+            // Populate filter dropdown
+            famCat.innerHTML = `<option value="all">Все категории</option>` + 
+                Object.keys(cats)
+                .map(k => `<option value="${k}">${cats[k].emoji ? cats[k].emoji + ' ' : ''}${cats[k].name}</option>`)
+                .join('');
+        }
+
+        // TRANSACTION FORM HANDLERS
+        window.setFormType = function(type) {
+            window.AppState.currentFormType = type;
+            const btnExp = document.getElementById('btn-type-expense');
+            const btnInc = document.getElementById('btn-type-income');
+
+            if (type === 'expense') {
+                btnExp.className = "py-2 px-3 text-xs font-bold rounded-xl border flex items-center justify-center gap-2 transition-all bg-rose-500/20 text-rose-300 border-rose-500/50";
+                btnInc.className = "py-2 px-3 text-xs font-bold rounded-xl border flex items-center justify-center gap-2 transition-all bg-slate-800/80 text-slate-400 border-slate-700 hover:bg-slate-700";
+            } else {
+                btnInc.className = "py-2 px-3 text-xs font-bold rounded-xl border flex items-center justify-center gap-2 transition-all bg-emerald-500/20 text-emerald-300 border-emerald-500/50";
+                btnExp.className = "py-2 px-3 text-xs font-bold rounded-xl border flex items-center justify-center gap-2 transition-all bg-slate-800/80 text-slate-400 border-slate-700 hover:bg-slate-700";
+            }
+
+            populateCategoryDropdowns();
+        };
+
+        window.handleFormSubmit = function(e) {
+            e.preventDefault();
+
+            const title = document.getElementById('txTitle').value.trim();
+            const amount = parseFloat(document.getElementById('txAmount').value);
+            const date = document.getElementById('txDate').value;
+            const category = document.getElementById('txCategory').value;
+
+            if (category === '__NEW__') {
+                openNewCategoryModal();
+                return;
+            }
+
+            const activeUser = window.AppState.currentTab === 'family' ? 'p1' : window.AppState.currentTab;
+
+            if (!title || isNaN(amount) || amount <= 0 || !date) {
+                showToast('Заполните все поля корректно', 'error');
+                return;
+            }
+
+            if (window.AppState.editingId) {
+                const idx = window.AppState.transactions.findIndex(t => t.id === window.AppState.editingId);
+                if (idx !== -1) {
+                    window.AppState.transactions[idx] = {
+                        ...window.AppState.transactions[idx],
+                        title,
+                        amount,
+                        type: window.AppState.currentFormType,
+                        category,
+                        date
+                    };
+                    showToast('Запись обновлена');
+                }
+                cancelEdit();
+            } else {
+                const newTx = {
+                    id: 'tx_' + Date.now(),
+                    user: activeUser,
+                    title,
+                    amount,
+                    type: window.AppState.currentFormType,
+                    category,
+                    date
+                };
+                window.AppState.transactions.unshift(newTx);
+                showToast('Операция успешно добавлена');
+            }
+
+            saveAndSync();
+            resetForm();
+            renderAll();
+        };
+
+        function resetForm() {
+            document.getElementById('txTitle').value = '';
+            document.getElementById('txAmount').value = '';
+            document.getElementById('txDate').value = new Date().toISOString().split('T')[0];
+        }
+
+        window.startEdit = function(id) {
+            const tx = window.AppState.transactions.find(t => t.id === id);
+            if (!tx) return;
+
+            if (window.AppState.currentTab === 'family') {
+                switchTab(tx.user);
+            }
+
+            window.AppState.editingId = id;
+            setFormType(tx.type);
+
+            document.getElementById('txTitle').value = tx.title;
+            document.getElementById('txAmount').value = tx.amount;
+            document.getElementById('txDate').value = tx.date;
+            document.getElementById('txCategory').value = tx.category;
+
+            document.getElementById('form-title').textContent = 'Редактировать операцию';
+            document.getElementById('btn-submit-tx').querySelector('span').textContent = 'Обновить';
+            document.getElementById('btn-cancel-edit').style.display = 'block';
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+
+        window.cancelEdit = function() {
+            window.AppState.editingId = null;
+            document.getElementById('form-title').textContent = 'Добавить операцию';
+            document.getElementById('btn-submit-tx').querySelector('span').textContent = 'Сохранить запись';
+            document.getElementById('btn-cancel-edit').style.display = 'none';
+            resetForm();
+        };
+
+        window.requestDelete = function(id) {
+            window.AppState.pendingAction = () => {
+                window.AppState.transactions = window.AppState.transactions.filter(t => t.id !== id);
+                saveAndSync();
+                renderAll();
+                showToast('Запись удалена');
+            };
+            openConfirmModal('Удаление транзакции', 'Вы уверены, что хотите удалить эту операцию?');
+        };
+
+        // RENDERING & CALCULATIONS
+        function formatSEK(val) {
+            return new Intl.NumberFormat('sv-SE', {
+                maximumFractionDigits: 0
+            }).format(val) + ' kr';
+        }
+
+        window.switchTab = function(tab) {
+            window.AppState.currentTab = tab;
+            
+            const btnFamily = document.getElementById('tab-family');
+            const btnP1 = document.getElementById('tab-p1');
+            const btnP2 = document.getElementById('tab-p2');
+
+            const viewFamily = document.getElementById('view-family');
+            const viewPersonal = document.getElementById('view-personal');
+
+            const activeTabClass = "bg-cyan-500 text-slate-950 shadow-lg shadow-cyan-500/20";
+            const inactiveTabClass = "text-slate-400 hover:text-slate-200 hover:bg-slate-800/50";
+
+            btnFamily.className = `flex-1 min-w-[160px] py-3 px-4 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all duration-200 ${tab === 'family' ? activeTabClass : inactiveTabClass}`;
+            btnP1.className = `flex-1 min-w-[140px] py-3 px-4 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all duration-200 ${tab === 'p1' ? activeTabClass : inactiveTabClass}`;
+            btnP2.className = `flex-1 min-w-[140px] py-3 px-4 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all duration-200 ${tab === 'p2' ? activeTabClass : inactiveTabClass}`;
+
+            if (tab === 'family') {
+                viewFamily.classList.remove('hidden');
+                viewPersonal.classList.add('hidden');
+            } else {
+                viewFamily.classList.add('hidden');
+                viewPersonal.classList.remove('hidden');
+                setupPersonalView(tab);
+            }
+
+            cancelEdit();
+            renderAll();
+        };
+
+        function setupPersonalView(userKey) {
+            const isP1 = userKey === 'p1';
+            const name = isP1 ? window.AppState.settings.p1Name : window.AppState.settings.p2Name;
+            
+            document.getElementById('personal-title').textContent = `Личный кабинет: ${name}`;
+            document.getElementById('activeUserFormBadge').textContent = name;
+            document.getElementById('personal-avatar').textContent = name.charAt(0).toUpperCase();
+            document.getElementById('personal-avatar').className = isP1 
+                ? "w-12 h-12 rounded-xl flex items-center justify-center font-bold text-lg bg-cyan-500/20 text-cyan-400 border border-cyan-500/30"
+                : "w-12 h-12 rounded-xl flex items-center justify-center font-bold text-lg bg-purple-500/20 text-purple-400 border border-purple-500/30";
+
+            document.getElementById('personal-banner-border').className = isP1
+                ? "glass-card p-5 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 border-t-4 border-t-cyan-500"
+                : "glass-card p-5 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 border-t-4 border-t-purple-500";
+        }
+
+        window.renderAll = function() {
+            populateMonthDropdown();
+
+            if (window.AppState.currentTab === 'family') {
+                renderFamilyView();
+            } else {
+                renderPersonalView(window.AppState.currentTab);
+            }
+            
+            lucide.createIcons();
+        };
+
+        function renderFamilyView() {
+            const filtered = getFilteredTransactions();
+
+            const totalIncome = filtered.filter(t => t.type === 'income').reduce((a, b) => a + Number(b.amount), 0);
+            const totalExpense = filtered.filter(t => t.type === 'expense').reduce((a, b) => a + Number(b.amount), 0);
+            const netBalance = totalIncome - totalExpense;
+            const savingsRate = totalIncome > 0 ? Math.max(0, Math.round(((totalIncome - totalExpense) / totalIncome) * 100)) : 0;
+
+            document.getElementById('family-stat-income').textContent = formatSEK(totalIncome);
+            document.getElementById('family-stat-expenses').textContent = formatSEK(totalExpense);
+            document.getElementById('family-stat-balance').textContent = formatSEK(netBalance);
+            document.getElementById('family-stat-savings-rate').textContent = `${savingsRate}%`;
+
+            const p1Expenses = filtered.filter(t => t.user === 'p1' && t.type === 'expense').reduce((a, b) => a + Number(b.amount), 0);
+            const p1Income = filtered.filter(t => t.user === 'p1' && t.type === 'income').reduce((a, b) => a + Number(b.amount), 0);
+            const p2Expenses = filtered.filter(t => t.user === 'p2' && t.type === 'expense').reduce((a, b) => a + Number(b.amount), 0);
+            const p2Income = filtered.filter(t => t.user === 'p2' && t.type === 'income').reduce((a, b) => a + Number(b.amount), 0);
+
+            const p1Share = totalExpense > 0 ? Math.round((p1Expenses / totalExpense) * 100) : 0;
+            const p2Share = totalExpense > 0 ? Math.round((p2Expenses / totalExpense) * 100) : 0;
+
+            document.getElementById('card-p1-sub').textContent = `Расходы: ${formatSEK(p1Expenses)} • Доходы: ${formatSEK(p1Income)}`;
+            document.getElementById('card-p1-share').textContent = `${p1Share}% расходов`;
+
+            document.getElementById('card-p2-sub').textContent = `Расходы: ${formatSEK(p2Expenses)} • Доходы: ${formatSEK(p2Income)}`;
+            document.getElementById('card-p2-share').textContent = `${p2Share}% расходов`;
+
+            renderTransactionFeed(filtered, 'familyTransactionList', true);
+            renderFamilyCategoryChart(filtered);
+            renderPartnerComparisonChart(filtered);
+        }
+
+        function renderPersonalView(userKey) {
+            const userTx = window.AppState.transactions.filter(t => t.user === userKey);
+            
+            const income = userTx.filter(t => t.type === 'income').reduce((a, b) => a + Number(b.amount), 0);
+            const expense = userTx.filter(t => t.type === 'expense').reduce((a, b) => a + Number(b.amount), 0);
+            const balance = income - expense;
+
+            document.getElementById('personal-stat-income').textContent = formatSEK(income);
+            document.getElementById('personal-stat-expense').textContent = formatSEK(expense);
+            document.getElementById('personal-stat-balance').textContent = formatSEK(balance);
+
+            const sortedUserTx = [...userTx].sort((a, b) => new Date(b.date) - new Date(a.date));
+            document.getElementById('personal-count-badge').textContent = sortedUserTx.length;
+
+            renderTransactionFeed(sortedUserTx, 'personalTransactionList', false);
+        }
+
+        function renderTransactionFeed(list, containerId, showUserBadge) {
+            const container = document.getElementById(containerId);
+            
+            if (containerId === 'familyTransactionList') {
+                document.getElementById('family-count-badge').textContent = list.length;
+            }
+
+            if (list.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12 space-y-2">
+                        <div class="w-10 h-10 bg-slate-900 rounded-full flex items-center justify-center mx-auto text-slate-500">
+                            <i data-lucide="inbox" class="w-5 h-5"></i>
+                        </div>
+                        <p class="text-xs text-slate-400">Нет записей по выбранным критериям</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = list.map(tx => {
+                const cat = window.AppState.categories[tx.category] || DEFAULT_CATEGORIES.shopping;
+                const isIncome = tx.type === 'income';
+                const isP1 = tx.user === 'p1';
+                const userName = isP1 ? window.AppState.settings.p1Name : window.AppState.settings.p2Name;
+                const userBadgeColor = isP1 ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30' : 'bg-purple-500/10 text-purple-400 border-purple-500/30';
+
+                const dateFormatted = new Date(tx.date).toLocaleDateString('ru-RU', {
+                    day: 'numeric',
+                    month: 'short'
+                });
+
+                return `
+                    <div class="flex items-center justify-between p-3 rounded-xl bg-slate-900/60 border border-slate-800/80 hover:border-slate-700 transition-all group">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <div class="w-9 h-9 rounded-xl flex items-center justify-center text-base flex-shrink-0" style="background-color: ${cat.color}15; border: 1px solid ${cat.color}30;">
+                                ${cat.emoji || '🛍️'}
+                            </div>
+                            <div class="min-w-0">
+                                <div class="flex items-center gap-2">
+                                    <h4 class="text-xs font-bold text-slate-200 truncate">${escapeHtml(tx.title)}</h4>
+                                    ${showUserBadge ? `<span class="text-[9px] font-bold px-1.5 py-0.2 rounded border ${userBadgeColor}">${userName}</span>` : ''}
+                                </div>
+                                <div class="flex items-center gap-2 mt-0.5">
+                                    <span class="text-[10px] text-slate-400">${dateFormatted}</span>
+                                    <span class="text-[10px] font-medium" style="color: ${cat.color};">
+                                        • ${cat.name}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-3 flex-shrink-0">
+                            <span class="text-xs font-bold ${isIncome ? 'text-emerald-400' : 'text-slate-200'}">
+                                ${isIncome ? '+' : '-'}${formatSEK(tx.amount)}
+                            </span>
+                            <div class="flex items-center gap-1 opacity-80 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button onclick="startEdit('${tx.id}')" class="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-slate-200">
+                                    <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
+                                </button>
+                                <button onclick="requestDelete('${tx.id}')" class="p-1 hover:bg-rose-950/50 rounded text-slate-400 hover:text-rose-400">
+                                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderFamilyCategoryChart(dataList) {
+            const ctx = document.getElementById('familyCategoryChart').getContext('2d');
+            const expenses = dataList.filter(t => t.type === 'expense');
+
+            const categorySums = {};
+            expenses.forEach(tx => {
+                categorySums[tx.category] = (categorySums[tx.category] || 0) + Number(tx.amount);
+            });
+
+            const labels = [];
+            const data = [];
+            const colors = [];
+
+            Object.keys(categorySums).forEach(catKey => {
+                const cat = window.AppState.categories[catKey] || DEFAULT_CATEGORIES.shopping;
+                labels.push((cat.emoji ? cat.emoji + ' ' : '') + cat.name.split(' / ')[0]);
+                data.push(categorySums[catKey]);
+                colors.push(cat.color);
+            });
+
+            if (familyChartInstance) familyChartInstance.destroy();
+
+            familyChartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: colors,
+                        borderColor: '#090d16',
+                        borderWidth: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { color: '#94a3b8', font: { size: 10 }, boxWidth: 10, padding: 8 }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: (c) => ` ${c.label}: ${formatSEK(c.raw)}`
+                            }
+                        }
+                    },
+                    cutout: '65%'
+                }
+            });
+        }
+
+        function renderPartnerComparisonChart(dataList) {
+            const ctx = document.getElementById('partnerComparisonChart').getContext('2d');
+            const expenses = dataList.filter(t => t.type === 'expense');
+
+            const categoriesUsed = Array.from(new Set(expenses.map(t => t.category)));
+            const labels = categoriesUsed.map(k => {
+                const cat = window.AppState.categories[k] || DEFAULT_CATEGORIES.shopping;
+                return (cat.emoji ? cat.emoji + ' ' : '') + cat.name.split(' / ')[0];
+            });
+            
+            const p1Data = categoriesUsed.map(cat => 
+                expenses.filter(t => t.user === 'p1' && t.category === cat).reduce((a, b) => a + Number(b.amount), 0)
+            );
+            
+            const p2Data = categoriesUsed.map(cat => 
+                expenses.filter(t => t.user === 'p2' && t.category === cat).reduce((a, b) => a + Number(b.amount), 0)
+            );
+
+            if (partnerComparisonChartInstance) partnerComparisonChartInstance.destroy();
+
+            partnerComparisonChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: window.AppState.settings.p1Name,
+                            data: p1Data,
+                            backgroundColor: '#06b6d4',
+                            borderRadius: 4
+                        },
+                        {
+                            label: window.AppState.settings.p2Name,
+                            data: p2Data,
+                            backgroundColor: '#a855f7',
+                            borderRadius: 4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            align: 'end',
+                            labels: { color: '#94a3b8', font: { size: 10 }, boxWidth: 10 }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: (c) => ` ${c.dataset.label}: ${formatSEK(c.raw)}`
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { color: '#64748b', font: { size: 9 } } },
+                        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b', font: { size: 9 } } }
+                    }
+                }
+            });
+        }
+
+        function getFilteredTransactions() {
+            const search = document.getElementById('familyFilterSearch').value.toLowerCase().trim();
+            const user = document.getElementById('familyFilterUser').value;
+            const category = document.getElementById('familyFilterCategory').value;
+            const month = document.getElementById('familyFilterMonth').value;
+
+            return window.AppState.transactions.filter(tx => {
+                const matchesSearch = tx.title.toLowerCase().includes(search);
+                const matchesUser = user === 'all' || tx.user === user;
+                const matchesCategory = category === 'all' || tx.category === category;
+                const matchesMonth = month === 'all' || tx.date.substring(0, 7) === month;
+
+                return matchesSearch && matchesUser && matchesCategory && matchesMonth;
+            }).sort((a, b) => new Date(b.date) - new Date(a.date));
+        }
+
+        function populateMonthDropdown() {
+            const monthSelect = document.getElementById('familyFilterMonth');
+            const current = monthSelect.value;
+
+            const months = new Set(window.AppState.transactions.map(t => t.date ? t.date.substring(0, 7) : ''));
+            const sorted = Array.from(months).filter(Boolean).sort().reverse();
+
+            monthSelect.innerHTML = `<option value="all">За всё время</option>` + 
+                sorted.map(m => {
+                    const [y, mon] = m.split('-');
+                    const dateObj = new Date(y, mon - 1);
+                    const label = dateObj.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' });
+                    return `<option value="${m}">${label.charAt(0).toUpperCase() + label.slice(1)}</option>`;
+                }).join('');
+
+            monthSelect.value = current;
+        }
+
+        function updatePartnerLabels() {
+            document.getElementById('label-tab-p1').textContent = window.AppState.settings.p1Name;
+            document.getElementById('label-tab-p2').textContent = window.AppState.settings.p2Name;
+            document.getElementById('filter-user-p1').textContent = window.AppState.settings.p1Name;
+            document.getElementById('filter-user-p2').textContent = window.AppState.settings.p2Name;
+            document.getElementById('card-p1-title').textContent = window.AppState.settings.p1Name;
+            document.getElementById('card-p2-title').textContent = window.AppState.settings.p2Name;
+
+            document.getElementById('input-p1-name').value = window.AppState.settings.p1Name;
+            document.getElementById('input-p2-name').value = window.AppState.settings.p2Name;
+        }
+
+        function saveAndSync() {
+            localStorage.setItem('se_family_budget_tx', JSON.stringify(window.AppState.transactions));
+            localStorage.setItem('se_family_budget_settings', JSON.stringify(window.AppState.settings));
+            localStorage.setItem('se_family_budget_categories', JSON.stringify(window.AppState.categories));
+            pushStateToFirestore();
+        }
+
+        // MODALS CONTROL
+        window.openRoomModal = function() {
+            document.getElementById('inputRoomCode').value = window.AppState.roomCode;
+            document.getElementById('roomModal').classList.remove('hidden');
+        };
+
+        window.closeRoomModal = function() {
+            document.getElementById('roomModal').classList.add('hidden');
+        };
+
+        window.saveRoomCode = function() {
+            const code = document.getElementById('inputRoomCode').value.trim();
+            if (code) {
+                window.AppState.roomCode = code;
+                localStorage.setItem('se_family_room_code', code);
+                setupFirestoreRealtimeSync();
+                closeRoomModal();
+                showToast(`Подключено к семейной комнате: ${code}`);
+            }
+        };
+
+        window.openSettingsModal = function() {
+            document.getElementById('settingsModal').classList.remove('hidden');
+        };
+
+        window.closeSettingsModal = function() {
+            document.getElementById('settingsModal').classList.add('hidden');
+        };
+
+        window.savePartnerNames = function() {
+            const p1 = document.getElementById('input-p1-name').value.trim();
+            const p2 = document.getElementById('input-p2-name').value.trim();
+
+            if (p1) window.AppState.settings.p1Name = p1;
+            if (p2) window.AppState.settings.p2Name = p2;
+
+            saveAndSync();
+            updatePartnerLabels();
+            closeSettingsModal();
+            renderAll();
+            showToast('Имена партнеров обновлены');
+        };
+
+        window.openExportModal = function() {
+            document.getElementById('exportModal').classList.remove('hidden');
+        };
+
+        window.closeExportModal = function() {
+            document.getElementById('exportModal').classList.add('hidden');
+        };
+
+        window.exportDataJSON = function() {
+            const payload = { 
+                settings: window.AppState.settings, 
+                categories: window.AppState.categories,
+                transactions: window.AppState.transactions 
+            };
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(payload, null, 2));
+            const a = document.createElement('a');
+            a.setAttribute("href", dataStr);
+            a.setAttribute("download", `se_family_budget_${new Date().toISOString().split('T')[0]}.json`);
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            showToast('Бэкап сохранен');
+        };
+
+        window.importDataJSON = function(event) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const parsed = JSON.parse(e.target.result);
+                    if (parsed.transactions && Array.isArray(parsed.transactions)) {
+                        window.AppState.transactions = parsed.transactions;
+                        if (parsed.settings) window.AppState.settings = parsed.settings;
+                        if (parsed.categories) window.AppState.categories = parsed.categories;
+                        saveAndSync();
+                        updatePartnerLabels();
+                        populateCategoryDropdowns();
+                        renderAll();
+                        closeExportModal();
+                        showToast('Бэкап успешно импортирован');
+                    } else {
+                        showToast('Неверный формат файла', 'error');
+                    }
+                } catch(err) {
+                    showToast('Ошибка при прочтении файла', 'error');
+                }
+            };
+            if (event.target.files[0]) reader.readAsText(event.target.files[0]);
+        };
+
+        function openConfirmModal(title, msg) {
+            document.getElementById('confirmTitle').textContent = title;
+            document.getElementById('confirmMessage').textContent = msg;
+            document.getElementById('confirmModal').classList.remove('hidden');
+        }
+
+        window.closeConfirmModal = function() {
+            document.getElementById('confirmModal').classList.add('hidden');
+            window.AppState.pendingAction = null;
+        };
+
+        window.executeConfirmAction = function() {
+            if (window.AppState.pendingAction) window.AppState.pendingAction();
+            closeConfirmModal();
+        };
+
+        window.openResetModal = function() {
+            window.AppState.pendingAction = () => {
+                window.AppState.transactions = [...DEMO_TRANSACTIONS];
+                window.AppState.categories = { ...DEFAULT_CATEGORIES };
+                saveAndSync();
+                populateCategoryDropdowns();
+                renderAll();
+                showToast('Загружены демо-данные');
+            };
+            openConfirmModal('Загрузка демо-данных', 'Все текущие данные будут заменены демо-набором в шведских кронах.');
+        };
+
+        function escapeHtml(str) {
+            return str.replace(/[&<>"']/g, function(m) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
+            });
+        }
+
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            
+            const isError = type === 'error';
+            const bgClass = isError ? 'bg-rose-900/90 text-rose-100 border-rose-700' : 'bg-slate-900/90 text-slate-100 border-cyan-500/50';
+            const iconName = isError ? 'alert-circle' : 'check-circle';
+            const iconColor = isError ? 'text-rose-400' : 'text-cyan-400';
+
+            toast.className = `flex items-center gap-2.5 px-4 py-3 rounded-xl border backdrop-blur-md shadow-xl text-xs font-semibold transition-all duration-300 transform translate-y-2 opacity-0 ${bgClass}`;
+            toast.innerHTML = `
+                <i data-lucide="${iconName}" class="w-4 h-4 ${iconColor}"></i>
+                <span>${message}</span>
+            `;
+
+            container.appendChild(toast);
+            lucide.createIcons();
+
+            setTimeout(() => toast.classList.remove('translate-y-2', 'opacity-0'), 10);
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // INITIALIZATION ON LOAD
+        window.onload = function() {
+            // Load local backup first
+            const savedTx = localStorage.getItem('se_family_budget_tx');
+            const savedSet = localStorage.getItem('se_family_budget_settings');
+            const savedCat = localStorage.getItem('se_family_budget_categories');
+
+            if (savedTx) try { window.AppState.transactions = JSON.parse(savedTx); } catch(e){}
+            if (savedSet) try { window.AppState.settings = JSON.parse(savedSet); } catch(e){}
+            if (savedCat) try { window.AppState.categories = JSON.parse(savedCat); } catch(e){}
+
+            document.getElementById('txDate').value = new Date().toISOString().split('T')[0];
+            updatePartnerLabels();
+            populateCategoryDropdowns();
+            renderAll();
+
+            initFirebase();
+        };
+    </script>
+</body>
+</html>
