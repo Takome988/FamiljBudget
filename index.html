@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Семейный Бюджет | Швеция (SEK / kr)</title>
+    <title>Семейный Бюджет Швеция | Familj Budget (SEK / kr)</title>
     
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -25,9 +25,6 @@
 
     <!-- FontAwesome CDN -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Lucide Icons CDN -->
-    <script src="https://unpkg.com/lucide@latest"></script>
     
     <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -51,13 +48,20 @@
             background: #334155;
         }
         .glass-card {
-            background: rgba(26, 36, 56, 0.8);
+            background: rgba(26, 36, 56, 0.85);
             backdrop-filter: blur(16px);
             border: 1px solid rgba(255, 255, 255, 0.08);
         }
         .glass-card-hover:hover {
             border-color: rgba(6, 182, 212, 0.3);
             box-shadow: 0 8px 24px -4px rgba(6, 182, 212, 0.1);
+        }
+        @keyframes pulse-subtle {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .animate-pulse-subtle {
+            animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
     </style>
 </head>
@@ -78,14 +82,15 @@
                         </h1>
                     </div>
                     <p class="text-xs text-slate-400 font-medium flex items-center gap-2 mt-0.5">
-                        <span>Учет трат семьи • Швеция 🇸🇪</span>
-                        <span id="syncStatusBadge" class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                            <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span> Локальный режим
+                        <span>Семейный учет • Швеция 🇸🇪</span>
+                        <span id="syncStatusBadge" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> 🟢 Облако подключено (Авто-синхронизация)
                         </span>
                     </p>
                 </div>
             </div>
 
+            <!-- Month Switcher Controls -->
             <div class="flex items-center justify-center gap-2 bg-slate-900/90 p-1.5 rounded-xl border border-slate-800 shadow-inner">
                 <button onclick="prevMonth()" title="Предыдущий месяц" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-all active:scale-95">
                     <i class="fa-solid fa-chevron-left text-xs"></i>
@@ -99,14 +104,15 @@
                 </button>
             </div>
 
+            <!-- Global Action Buttons -->
             <div class="flex flex-wrap items-center gap-2">
+                <button onclick="pullFromCloud(true)" title="Синхронизировать с облаком" class="flex items-center gap-2 px-3 py-2 text-xs font-bold rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/30 active:scale-95 transition-all">
+                    <i class="fa-solid fa-rotate text-cyan-400" id="syncSpinnerIcon"></i>
+                    <span>Обновить из облака</span>
+                </button>
                 <button onclick="copyRecurringPaymentsToCurrentMonth()" class="flex items-center gap-2 px-3 py-2 text-xs font-bold rounded-xl bg-purple-500/15 hover:bg-purple-500/25 text-purple-300 border border-purple-500/30 active:scale-95 transition-all">
                     <i class="fa-solid fa-copy text-purple-400"></i>
                     <span>📋 Перенести регулярные</span>
-                </button>
-                <button onclick="openRoomModal()" class="flex items-center gap-2 px-3 py-2 text-xs font-bold rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 active:scale-95 transition-all">
-                    <i class="fa-solid fa-wifi"></i>
-                    <span>Код семьи: <strong id="headerRoomCodeDisplay" class="underline">demo-family</strong></span>
                 </button>
                 <button onclick="openSettingsModal()" class="flex items-center gap-2 px-3 py-2 text-xs font-semibold rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 active:scale-95 transition-all">
                     <i class="fa-solid fa-gear text-amber-400"></i>
@@ -323,6 +329,7 @@
             </section>
 
             <section class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Transaction Form -->
                 <div class="lg:col-span-5 glass-card p-5 rounded-2xl space-y-4 h-fit">
                     <div class="flex items-center justify-between pb-3 border-b border-slate-800">
                         <div class="flex items-center gap-2">
@@ -433,7 +440,6 @@
 
     </div>
 
-
     <!-- New Category Modal -->
     <div id="newCategoryModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="glass-card max-w-md w-full p-6 rounded-2xl space-y-4 border border-cyan-500/30 shadow-2xl">
@@ -483,38 +489,6 @@
                     </button>
                 </div>
             </form>
-        </div>
-    </div>
-
-    <!-- Family Room Code Modal -->
-    <div id="roomModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-        <div class="glass-card max-w-md w-full p-6 rounded-2xl space-y-4 border border-cyan-500/40 shadow-2xl">
-            <div class="flex justify-between items-center pb-2 border-b border-slate-800">
-                <h3 class="font-bold text-lg text-slate-100 flex items-center gap-2">
-                    <i class="fa-solid fa-wifi text-cyan-400"></i> Облачная синхронизация
-                </h3>
-                <button onclick="closeRoomModal()" class="text-slate-400 hover:text-slate-200">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
-            </div>
-            
-            <p class="text-xs text-slate-400 leading-relaxed">
-                Введите одинаковый **Код семьи** на вашем компьютере и телефоне вашей супруги. Приложение моментально установит прямое соединение и будет обновлять расходы в реальном времени!
-            </p>
-
-            <div class="space-y-3">
-                <div>
-                    <label for="inputRoomCode" class="block text-xs font-semibold text-slate-400 mb-1">Секретный код семьи</label>
-                    <input type="text" id="inputRoomCode" placeholder="например: swe-family-2026" 
-                        class="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-sm font-bold text-cyan-400 placeholder-slate-600 focus:outline-none focus:border-cyan-500">
-                </div>
-            </div>
-
-            <div class="flex gap-2 pt-2">
-                <button onclick="saveRoomCode()" class="w-full py-2.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs rounded-xl shadow-lg transition-all">
-                    Подключиться к облаку GunDB
-                </button>
-            </div>
         </div>
     </div>
 
@@ -632,6 +606,9 @@
         const now = new Date();
         const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
+        // Global static shared room key so NO CODE input is needed!
+        const SHARED_CLOUD_ROOM_KEY = 'takome988_familj_budget_shared_global_v1';
+
         const DEMO_TRANSACTIONS = [
             { id: 'tx_1', user: 'p1', title: 'Зарплата (Lön efter skatt)', amount: 36000, type: 'income', category: 'salary', date: `${currentMonthStr}-25`, isRecurring: true },
             { id: 'tx_2', user: 'p1', title: 'Аренда квартиры (Hyra/Avgift)', amount: 12500, type: 'expense', category: 'housing', date: `${currentMonthStr}-28`, isRecurring: true },
@@ -646,7 +623,6 @@
         ];
 
         window.AppState = {
-            roomCode: localStorage.getItem('se_family_room_code') || 'demo-family',
             settings: { p1Name: 'Антон', p2Name: 'Мария' },
             categories: { ...DEFAULT_CATEGORIES },
             transactions: [...DEMO_TRANSACTIONS],
@@ -656,73 +632,109 @@
             selectedEmoji: '🛍️',
             editingId: null,
             pendingAction: null,
-            gunNode: null
+            lastCloudUpdate: 0
         };
 
         let familyChartInstance = null;
         let partnerComparisonChartInstance = null;
 
+        // Initialize robust GunDB peers for seamless cross-device auto-sync
         const gun = Gun([
             'https://gun-manhattan.herokuapp.com/gun',
-            'https://gundb-relay-uncensored.herokuapp.com/gun'
+            'https://gundb-relay-uncensored.herokuapp.com/gun',
+            'https://peer.wallrpc.com/gun'
         ]);
 
-        function initGunSync() {
-            const code = window.AppState.roomCode.toLowerCase().trim();
-            document.getElementById('headerRoomCodeDisplay').textContent = code;
+        const gunNode = gun.get(SHARED_CLOUD_ROOM_KEY);
 
-            if (window.AppState.gunNode) {
-                window.AppState.gunNode.off();
-            }
-
-            window.AppState.gunNode = gun.get('familj_budget_v4_' + code);
-
-            window.AppState.gunNode.on((data) => {
+        function initCloudSync() {
+            gunNode.on((data) => {
                 if (data && data.payload) {
                     try {
                         const parsed = JSON.parse(data.payload);
+                        if (parsed.updatedAt && parsed.updatedAt <= window.AppState.lastCloudUpdate) {
+                            return; // Skip older payloads
+                        }
+                        
+                        window.AppState.lastCloudUpdate = parsed.updatedAt || Date.now();
                         if (parsed.transactions) window.AppState.transactions = parsed.transactions;
                         if (parsed.categories) window.AppState.categories = { ...DEFAULT_CATEGORIES, ...parsed.categories };
                         if (parsed.settings) window.AppState.settings = parsed.settings;
 
+                        saveToLocalStorage();
                         updatePartnerLabels();
                         populateCategoryDropdowns();
                         renderAll();
                         updateSyncBadge(true);
                     } catch (e) {
-                        console.warn("GunDB parse error", e);
+                        console.warn("Cloud sync parse error", e);
                     }
                 }
             });
 
-            updateSyncBadge(true);
+            // Initial pull and periodic background refresh check every 8 seconds
+            pullFromCloud(false);
+            setInterval(() => {
+                pullFromCloud(false);
+            }, 8000);
         }
 
-        function pushStateToGun() {
-            const code = window.AppState.roomCode.toLowerCase().trim();
+        function pullFromCloud(showToastNotice = false) {
+            const icon = document.getElementById('syncSpinnerIcon');
+            if (icon) icon.classList.add('fa-spin');
+
+            gunNode.once((data) => {
+                if (icon) icon.classList.remove('fa-spin');
+                if (data && data.payload) {
+                    try {
+                        const parsed = JSON.parse(data.payload);
+                        window.AppState.lastCloudUpdate = parsed.updatedAt || Date.now();
+                        if (parsed.transactions) window.AppState.transactions = parsed.transactions;
+                        if (parsed.categories) window.AppState.categories = { ...DEFAULT_CATEGORIES, ...parsed.categories };
+                        if (parsed.settings) window.AppState.settings = parsed.settings;
+
+                        saveToLocalStorage();
+                        updatePartnerLabels();
+                        populateCategoryDropdowns();
+                        renderAll();
+                        updateSyncBadge(true);
+                        if (showToastNotice) showToast('Данные успешно обновлены из облака!');
+                    } catch (e) {
+                        if (showToastNotice) showToast('Ошибка при загрузке облака', 'error');
+                    }
+                } else if (showToastNotice) {
+                    showToast('Облако готово и синхронизировано');
+                }
+            });
+        }
+
+        function pushStateToCloud() {
+            const nowTs = Date.now();
+            window.AppState.lastCloudUpdate = nowTs;
+
             const payload = JSON.stringify({
                 transactions: window.AppState.transactions,
                 categories: window.AppState.categories,
                 settings: window.AppState.settings,
-                updatedAt: new Date().toISOString()
+                updatedAt: nowTs
             });
 
-            gun.get('familj_budget_v4_' + code).put({ payload: payload });
-            
+            gunNode.put({ payload: payload });
+            saveToLocalStorage();
+            updateSyncBadge(true);
+        }
+
+        function saveToLocalStorage() {
             localStorage.setItem('se_family_budget_tx', JSON.stringify(window.AppState.transactions));
             localStorage.setItem('se_family_budget_settings', JSON.stringify(window.AppState.settings));
             localStorage.setItem('se_family_budget_categories', JSON.stringify(window.AppState.categories));
-            updateSyncBadge(true);
         }
 
         function updateSyncBadge(connected) {
             const badge = document.getElementById('syncStatusBadge');
-            if (connected) {
+            if (badge) {
                 badge.className = "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
-                badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Синхронизировано (Облако)`;
-            } else {
-                badge.className = "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20";
-                badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span> Локальный режим`;
+                badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> 🟢 Облако подключено (Авто-синхронизация)`;
             }
         }
 
@@ -789,11 +801,11 @@
             });
 
             if (addedCount > 0) {
-                pushStateToGun();
+                pushStateToCloud();
                 renderAll();
                 showToast(`Перенесено ${addedCount} постоянных платежей в ${formatMonthName(targetMonth)}!`);
             } else {
-                showToast(`Все постоянные платежи уже есть в ${formatMonthName(targetMonth)}.`, 'error');
+                showToast(`Все постоянные платежи уже внесены в ${formatMonthName(targetMonth)}.`, 'error');
             }
         };
 
@@ -854,9 +866,9 @@
             document.getElementById('txCategory').value = catKey;
 
             closeNewCategoryModal();
-            pushStateToGun();
+            pushStateToCloud();
             renderSettingsCategoryList();
-            showToast(`Категория "${name}" создана!`);
+            showToast(`Категория "${name}" успешно создана!`);
         };
 
         function populateCategoryDropdowns() {
@@ -935,7 +947,7 @@
                 showToast('Операция добавлена');
             }
 
-            pushStateToGun();
+            pushStateToCloud();
             resetForm();
             renderAll();
         };
@@ -980,7 +992,7 @@
         window.requestDelete = function(id) {
             window.AppState.pendingAction = () => {
                 window.AppState.transactions = window.AppState.transactions.filter(t => t.id !== id);
-                pushStateToGun();
+                pushStateToCloud();
                 renderAll();
                 showToast('Запись удалена');
             };
@@ -1282,26 +1294,6 @@
             document.getElementById('input-p2-name').value = window.AppState.settings.p2Name;
         }
 
-        window.openRoomModal = function() {
-            document.getElementById('inputRoomCode').value = window.AppState.roomCode;
-            document.getElementById('roomModal').classList.remove('hidden');
-        };
-
-        window.closeRoomModal = function() {
-            document.getElementById('roomModal').classList.add('hidden');
-        };
-
-        window.saveRoomCode = function() {
-            const code = document.getElementById('inputRoomCode').value.trim();
-            if (code) {
-                window.AppState.roomCode = code;
-                localStorage.setItem('se_family_room_code', code);
-                initGunSync();
-                closeRoomModal();
-                showToast(`Подключено к семейной комнате: ${code}`);
-            }
-        };
-
         window.openSettingsModal = function() {
             renderSettingsCategoryList();
             document.getElementById('settingsModal').classList.remove('hidden');
@@ -1318,7 +1310,7 @@
             if (p1) window.AppState.settings.p1Name = p1;
             if (p2) window.AppState.settings.p2Name = p2;
 
-            pushStateToGun();
+            pushStateToCloud();
             updatePartnerLabels();
             closeSettingsModal();
             renderAll();
@@ -1351,7 +1343,7 @@
 
         window.deleteCategory = function(catKey) {
             delete window.AppState.categories[catKey];
-            pushStateToGun();
+            pushStateToCloud();
             populateCategoryDropdowns();
             renderSettingsCategoryList();
             renderAll();
@@ -1391,7 +1383,7 @@
                         window.AppState.transactions = parsed.transactions;
                         if (parsed.settings) window.AppState.settings = parsed.settings;
                         if (parsed.categories) window.AppState.categories = parsed.categories;
-                        pushStateToGun();
+                        pushStateToCloud();
                         updatePartnerLabels();
                         populateCategoryDropdowns();
                         renderAll();
@@ -1452,16 +1444,4 @@
             const savedCat = localStorage.getItem('se_family_budget_categories');
 
             if (savedTx) try { window.AppState.transactions = JSON.parse(savedTx); } catch(e){}
-            if (savedSet) try { window.AppState.settings = JSON.parse(savedSet); } catch(e){}
-            if (savedCat) try { window.AppState.categories = JSON.parse(savedCat); } catch(e){}
-
-            document.getElementById('txDate').value = `${window.AppState.selectedMonth}-15`;
-            updatePartnerLabels();
-            populateCategoryDropdowns();
-            renderAll();
-
-            initGunSync();
-        };
-    </script>
-</body>
-</html>
+            if (savedSet) try { window.AppState.settings = JSON.parse(savedSet
