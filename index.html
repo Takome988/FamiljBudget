@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>FamiljBudget 🇸🇪 - Семейный Бюджет</title>
+  <!-- Chart.js для графиков -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root {
@@ -239,15 +240,15 @@
         <button class="modal-close" onclick="closeModal('syncModal')">✕</button>
       </div>
       <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 14px; line-height: 1.4;">
-        Введите уникальный **Код семьи** (например, <code>umea-familj-2026</code>). Введите точно такой же код на телефоне или компьютере вашей супруги. Все данные будут мгновенно объединяться и синхронизироваться!
+        Введите один и тот же <b>Код семьи</b> (например, <code>umea-2026</code>) на вашем компьютере и на телефоне супруги. Данные будут автоматически объединяться!
       </p>
       <form onsubmit="handleSaveFamilyCode(event)">
         <div class="form-group">
-          <label>Код Семьи (Family Room Code)</label>
-          <input type="text" id="familyCodeInput" class="form-control" placeholder="например, umea-familj-2026" required>
+          <label>Код Семьи (Family Code)</label>
+          <input type="text" id="familyCodeInput" class="form-control" placeholder="например, umea-2026" required>
         </div>
         <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; margin-top: 10px;">
-          Сохранить и Синхронизировать
+          Подключить и Синхронизировать
         </button>
       </form>
     </div>
@@ -368,11 +369,12 @@
   </div>
 
   <script>
-    const STORAGE_KEY = 'familj_budget_se_v4';
-    const FIREBASE_BASE_URL = 'https://familjbudget-app-default-rtdb.europe-west1.firebasedatabase.app/rooms';
+    const STORAGE_KEY = 'familj_budget_se_v5';
+    const FIREBASE_BASE_URL = 'https://familj-budget-swe-default-rtdb.europe-west1.firebasedatabase.app/rooms';
 
     let state = {
       familyCode: '',
+      updatedAt: 0,
       activeTab: 'all',
       currentYear: 2026,
       currentMonth: 8,
@@ -423,13 +425,14 @@
     }
 
     async function saveState() {
+      state.updatedAt = Date.now();
       saveStateLocal();
       if (state.familyCode) {
         await pushToCloud();
       }
     }
 
-    // Облачные функции (Firebase REST API)
+    // Облачные функции
     async function pushToCloud() {
       if (!state.familyCode) return;
       const roomKey = state.familyCode.toLowerCase().trim().replace(/[^a-z0-9_-]/g, '');
@@ -443,12 +446,12 @@
             transactions: state.transactions,
             categories: state.categories,
             settings: state.settings,
-            updatedAt: Date.now()
+            updatedAt: state.updatedAt
           })
         });
         updateSyncBadge(true);
       } catch(e) {
-        console.error('Ошибка сохранения в облако:', e);
+        console.error('Ошибка записи в облако:', e);
         updateSyncBadge(false);
       }
     }
@@ -463,11 +466,18 @@
         if (res.ok) {
           const cloudData = await res.json();
           if (cloudData) {
-            if (cloudData.transactions) state.transactions = cloudData.transactions;
-            if (cloudData.categories) state.categories = cloudData.categories;
-            if (cloudData.settings) state.settings = cloudData.settings;
-            saveStateLocal();
+            // Если в облаке нет данных или данные в облаке новее/отличаются
+            if (!cloudData.updatedAt || cloudData.updatedAt >= (state.updatedAt || 0)) {
+              if (cloudData.transactions) state.transactions = cloudData.transactions;
+              if (cloudData.categories) state.categories = cloudData.categories;
+              if (cloudData.settings) state.settings = cloudData.settings;
+              if (cloudData.updatedAt) state.updatedAt = cloudData.updatedAt;
+              saveStateLocal();
+            }
             updateSyncBadge(true);
+          } else {
+            // Комната еще пуста — отправляем наши локальные данные в облако
+            await pushToCloud();
           }
         }
       } catch(e) {
@@ -492,7 +502,7 @@
       if (syncInterval) clearInterval(syncInterval);
       if (state.familyCode) {
         pullFromCloud();
-        syncInterval = setInterval(pullFromCloud, 5000); // авто-проверка каждые 5 сек
+        syncInterval = setInterval(pullFromCloud, 4000); // авто-синхронизация каждые 4 секунды
       } else {
         updateSyncBadge(false);
       }
@@ -704,7 +714,6 @@
       }
     }
 
-    // РЕДАКТИРОВАНИЕ ОПЕРАЦИИ
     function openEditTxModal(id) {
       const tx = state.transactions.find(t => t.id === id);
       if (!tx) return;
@@ -815,12 +824,13 @@
       closeModal('settingsModal');
     }
 
-    function handleSaveFamilyCode(e) {
+    async function handleSaveFamilyCode(e) {
       e.preventDefault();
       const code = document.getElementById('familyCodeInput').value.trim();
       state.familyCode = code;
       saveStateLocal();
       closeModal('syncModal');
+      await pullFromCloud();
       setupSyncInterval();
     }
 
