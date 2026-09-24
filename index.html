@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>FamiljBudget 🇸🇪 - Семейный Бюджет (Андрей и Алена)</title>
-  <!-- Chart.js для графиков -->
+  <!-- Chart.js для визуализации -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root {
@@ -126,12 +126,12 @@
     </div>
   </header>
 
-  <!-- Информационная плашка облака -->
+  <!-- Информационный баннер -->
   <div class="cloud-banner" id="cloudBanner">
     <div>
       <div style="font-weight: 700; font-size: 1rem;" id="bannerTitle">🌐 Облачная синхронизация не активирована</div>
       <div style="font-size: 0.85rem; opacity: 0.9; margin-top: 2px;" id="bannerDesc">
-        Нажмите кнопку справа, чтобы создать единую онлайн-базу в интернете.
+        Нажмите кнопку справа, чтобы создать единую базу для вашей семьи.
       </div>
     </div>
     <button class="btn btn-success" id="bannerBtn" onclick="initRealCloud()">
@@ -146,7 +146,7 @@
     <button class="tab-btn" onclick="switchTab('p2')" id="tabP2">👤 Алена</button>
   </div>
 
-  <!-- Карточки итогов -->
+  <!-- Сводные карточки -->
   <div class="summary-grid">
     <div class="card">
       <div class="card-title">Доходы (Inkomster)</div>
@@ -166,7 +166,7 @@
     </div>
   </div>
 
-  <!-- Графики -->
+  <!-- Диаграммы -->
   <div class="main-grid">
     <div class="card">
       <div class="card-title">Расходы по категориям</div>
@@ -363,9 +363,7 @@
   </div>
 
   <script>
-    // РЕАЛЬНЫЙ ПУБЛИЧНЫЙ СЕРВИС ХРАНЕНИЯ JSON (NPOINT.IO)
-    const NPOINT_API = 'https://api.npoint.io';
-    const LOCAL_KEY = 'familj_budget_se_final_v1';
+    const LOCAL_KEY = 'familj_budget_se_final_v2';
 
     let state = {
       binId: '',
@@ -437,36 +435,27 @@
       }
     }
 
-    // ИНИЦИАЛИЗАЦИЯ НАСТОЯЩЕЙ БАЗЫ В ИНТЕРНЕТЕ
+    // ИНИЦИАЛИЗАЦИЯ НАДЕЖНОГО KV-ХРАНИЛИЩА
     async function initRealCloud() {
       try {
         const btn = document.getElementById('bannerBtn');
         btn.innerText = '⏳ Создаем базу...';
         btn.disabled = true;
 
+        const secretKey = 'fam_' + Math.random().toString(36).substring(2, 10) + Date.now().toString(36).substring(4, 8);
+        state.binId = secretKey;
         state.updatedAt = Date.now();
 
-        const res = await fetch(NPOINT_API, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            updatedAt: state.updatedAt,
-            settings: state.settings,
-            categories: state.categories,
-            transactions: state.transactions
-          })
-        });
-
-        const data = await res.json();
-        if (data && data.id) {
-          state.binId = data.id;
-          window.location.hash = data.id;
+        const ok = await pushToCloud();
+        if (ok) {
+          window.location.hash = secretKey;
           saveLocalState();
           updateCloudBannerUI();
           setupSyncLoop();
-          alert('✅ Облачная ячейка успешно создана в интернете!\n\nСкопируйте URL-адрес из строки браузера (он теперь содержит ваш хвостик #' + data.id + ') и отправьте Алене.');
+          alert('✅ Облачная семейная база успешно создана!\n\nСкопируйте URL из строки браузера (он содержит ваш код #' + secretKey + ') и отправьте Алене.');
         } else {
-          alert('Не удалось получить ответ от сервера. Попробуйте ещё раз.');
+          state.binId = '';
+          alert('Не удалось создать базу в облаке. Проверьте подключение к интернету.');
         }
       } catch(e) {
         alert('Ошибка создания базы: ' + e.message);
@@ -479,11 +468,11 @@
       }
     }
 
-    // ОБМЕН ДАННЫМИ С NPOINT.IO
+    // БЕЗОПАСНЫЙ ОБМЕН ДАННЫМИ БЕЗ JSON-ОШИБОК
     async function pushToCloud() {
-      if (!state.binId) return;
+      if (!state.binId) return false;
       try {
-        await fetch(`${NPOINT_API}/${state.binId}`, {
+        const res = await fetch(`https://kvdb.io/${state.binId}/data`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -493,28 +482,44 @@
             transactions: state.transactions
           })
         });
-        updateSyncBadge(true);
+
+        if (res.ok) {
+          updateSyncBadge(true);
+          return true;
+        }
+        updateSyncBadge(false);
+        return false;
       } catch(e) {
         console.error('Ошибка записи:', e);
         updateSyncBadge(false);
+        return false;
       }
     }
 
     async function pullFromCloud() {
       if (!state.binId) return;
       try {
-        const res = await fetch(`${NPOINT_API}/${state.binId}`);
-        if (res.ok) {
-          const cloudData = await res.json();
-          if (cloudData && cloudData.updatedAt && cloudData.updatedAt > (state.updatedAt || 0)) {
-            if (cloudData.transactions) state.transactions = cloudData.transactions;
-            if (cloudData.categories) state.categories = cloudData.categories;
-            if (cloudData.settings) state.settings = cloudData.settings;
-            state.updatedAt = cloudData.updatedAt;
-            saveLocalState();
-          }
-          updateSyncBadge(true);
+        const res = await fetch(`https://kvdb.io/${state.binId}/data`);
+        if (!res.ok) {
+          updateSyncBadge(false);
+          return;
         }
+
+        const text = await res.text();
+        if (!text || text.trim().startsWith('<')) {
+          updateSyncBadge(false);
+          return;
+        }
+
+        const cloudData = JSON.parse(text);
+        if (cloudData && cloudData.updatedAt && cloudData.updatedAt > (state.updatedAt || 0)) {
+          if (cloudData.transactions) state.transactions = cloudData.transactions;
+          if (cloudData.categories) state.categories = cloudData.categories;
+          if (cloudData.settings) state.settings = cloudData.settings;
+          state.updatedAt = cloudData.updatedAt;
+          saveLocalState();
+        }
+        updateSyncBadge(true);
       } catch(e) {
         console.error('Ошибка чтения:', e);
         updateSyncBadge(false);
@@ -553,7 +558,7 @@
       const text = document.getElementById('syncText');
       if (state.binId) {
         dot.innerText = isOk ? '🟢' : '🟡';
-        text.innerText = isOk ? 'Облако вышки: #' + state.binId : 'Подключение...';
+        text.innerText = isOk ? 'Облако: #' + state.binId : 'Подключение...';
       } else {
         dot.innerText = '⚪';
         text.innerText = 'Локальный режим';
@@ -564,7 +569,7 @@
       if (syncInterval) clearInterval(syncInterval);
       if (state.binId) {
         pullFromCloud();
-        syncInterval = setInterval(pullFromCloud, 3000); // каждые 3 секунды
+        syncInterval = setInterval(pullFromCloud, 3000);
       }
     }
 
