@@ -3,9 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FamiljBudget 🇸🇪 - Семейный Бюджет (Андрей и Алена)</title>
-  <!-- Chart.js для диаграмм -->
+  <title>FamiljBudget 🇸🇪 - Андрей и Алена</title>
+  
+  <!-- Chart.js для графиков -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <!-- Официальный Firebase SDK от Google -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+
   <style>
     :root {
       --bg-color: #0f172a;
@@ -39,8 +45,10 @@
     .btn-primary { background: var(--primary); border-color: var(--primary); }
     .btn-primary:hover { background: var(--primary-hover); }
     .btn-purple { background: var(--purple); border-color: var(--purple); }
+    .btn-fire { background: #ea580c; border-color: #ea580c; color: white; }
+    .btn-fire:hover { background: #c2410c; }
 
-    .sync-status { display: flex; align-items: center; gap: 6px; font-size: 0.82rem; padding: 6px 12px; border-radius: 20px; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); color: var(--success); }
+    .sync-status { display: flex; align-items: center; gap: 6px; font-size: 0.82rem; padding: 6px 12px; border-radius: 20px; background: rgba(255,255,255,0.05); border: 1px solid var(--card-border); }
 
     .nav-tabs { display: flex; gap: 8px; margin-bottom: 24px; background: var(--card-bg); padding: 6px; border-radius: 12px; border: 1px solid var(--card-border); }
     .tab-btn { flex: 1; background: transparent; border: none; color: var(--text-muted); padding: 10px; font-weight: 600; border-radius: 8px; cursor: pointer; text-align: center; transition: all 0.2s; }
@@ -87,7 +95,7 @@
     .btn-icon:hover { color: var(--text-main); background: var(--card-border); }
 
     .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.75); display: none; align-items: center; justify-content: center; z-index: 100; padding: 16px; }
-    .modal { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 14px; padding: 24px; width: 100%; max-width: 480px; }
+    .modal { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 14px; padding: 24px; width: 100%; max-width: 520px; }
     .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
     .modal-close { background: transparent; border: none; color: var(--text-muted); font-size: 1.2rem; cursor: pointer; }
   </style>
@@ -103,7 +111,7 @@
       </div>
     </div>
 
-    <!-- Помесячный переключатель -->
+    <!-- Переключатель месяца -->
     <div class="month-picker">
       <button class="month-btn" onclick="changeMonth(-1)">←</button>
       <div class="month-display" id="currentMonthLabel">Сентябрь 2026</div>
@@ -112,28 +120,31 @@
 
     <div class="header-actions">
       <div class="sync-status" id="syncStatusBadge">
-        <span id="syncDot">🟢</span> <span id="syncText">Общий Семейный Бюджет</span>
+        <span id="syncDot">⚪</span> <span id="syncText">Локальный режим</span>
       </div>
+      <button class="btn btn-fire" onclick="openModal('firebaseModal')">
+        🔥 Настроить Облако
+      </button>
       <button class="btn btn-purple" onclick="copyRecurringPayments()">
         📋 Перенести регулярные
       </button>
       <button class="btn" onclick="openModal('settingsModal')">
-        ⚙️ Настройки
+        ⚙️ Имена
       </button>
       <button class="btn" onclick="openModal('backupModal')">
-        💾 Бэкап
+        💾 Файл
       </button>
     </div>
   </header>
 
-  <!-- Переключатель партнеров -->
+  <!-- Вкладки партнеров -->
   <div class="nav-tabs">
     <button class="tab-btn active" onclick="switchTab('all')" id="tabAll">🏠 Общий семейный бюджет</button>
     <button class="tab-btn" onclick="switchTab('p1')" id="tabP1">👤 Андрей</button>
     <button class="tab-btn" onclick="switchTab('p2')" id="tabP2">👤 Алена</button>
   </div>
 
-  <!-- Карточки итогов -->
+  <!-- Сводка -->
   <div class="summary-grid">
     <div class="card">
       <div class="card-title">Доходы (Inkomster)</div>
@@ -153,7 +164,7 @@
     </div>
   </div>
 
-  <!-- Диаграммы -->
+  <!-- Графики -->
   <div class="main-grid">
     <div class="card">
       <div class="card-title">Расходы по категориям</div>
@@ -227,11 +238,30 @@
 
     <!-- Список транзакций -->
     <div class="card">
-      <div class="card-title" style="margin-bottom: 16px; display:flex; justify-content:space-between; align-items:center;">
-        <span>История операций за месяц</span>
-        <button class="btn" style="padding: 4px 8px; font-size: 0.8rem;" onclick="pullFromCloud()">🔄 Обновить</button>
-      </div>
+      <div class="card-title" style="margin-bottom: 16px;">История операций за месяц</div>
       <div class="tx-list" id="txListContainer"></div>
+    </div>
+  </div>
+
+  <!-- МОДАЛЬНОЕ ОКНО: Настройка Firebase -->
+  <div class="modal-overlay" id="firebaseModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>🔥 Подключение базы Google Firebase</h3>
+        <button class="modal-close" onclick="closeModal('firebaseModal')">✕</button>
+      </div>
+      <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px; line-height: 1.4;">
+        Вставьте ссылку на вашу бесплатную Realtime Database из Google Firebase Консоли. После этого синхронизация будет работать мгновенно на всех устройствах.
+      </p>
+      <form onsubmit="handleSaveFirebaseConfig(event)">
+        <div class="form-group">
+          <label>URL Базы Данных (databaseURL)</label>
+          <input type="url" id="fbDbUrl" class="form-control" placeholder="https://your-app-default-rtdb.europe-west1.firebasedatabase.app" required>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; margin-top: 10px;">
+          Подключить Базу Google
+        </button>
+      </form>
     </div>
   </div>
 
@@ -353,18 +383,15 @@
   <div class="modal-overlay" id="backupModal">
     <div class="modal">
       <div class="modal-header">
-        <h3>Резервное копирование (JSON)</h3>
+        <h3>Резервное копирование</h3>
         <button class="modal-close" onclick="closeModal('backupModal')">✕</button>
       </div>
-      <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 16px;">
-        Вы можете сохранить файл со всеми данными или передать его между устройствами напрямую.
-      </p>
       <div style="display: flex; gap: 10px; flex-direction: column;">
         <button class="btn btn-primary" onclick="exportData()" style="justify-content: center;">
-          📥 Скачать файл данных (Export JSON)
+          📥 Скачать файл данных (JSON)
         </button>
         <label class="btn" style="justify-content: center; cursor: pointer;">
-          📤 Загрузить файл данных (Import JSON)
+          📤 Загрузить файл данных (JSON)
           <input type="file" accept=".json" onchange="importData(event)" style="display: none;">
         </label>
       </div>
@@ -372,12 +399,10 @@
   </div>
 
   <script>
-    const LOCAL_KEY = 'familj_budget_se_stable_v1';
-    // Облачная ячейка для общей синхронизации
-    const CLOUD_ENDPOINT = 'https://api.restful-api.dev/objects/ff8081819280d09d019283f511223344';
+    const LOCAL_KEY = 'familj_budget_se_fresh_v1';
 
     let state = {
-      updatedAt: 0,
+      firebaseUrl: '',
       activeTab: 'all',
       currentYear: 2026,
       currentMonth: 8,
@@ -400,24 +425,12 @@
 
     let catChartInstance = null;
     let partnerChartInstance = null;
+    let firebaseDbRef = null;
 
     const monthNames = [
       'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 
       'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
     ];
-
-    // Безопасный сетевой запрос, предотвращающий ошибки SyntaxError
-    async function safeFetchJson(url, options = {}) {
-      try {
-        const res = await fetch(url, options);
-        if (!res.ok) return null;
-        const contentType = res.headers.get('content-type') || '';
-        if (!contentType.includes('application/json')) return null;
-        return await res.json();
-      } catch (e) {
-        return null;
-      }
-    }
 
     function loadLocalState() {
       const saved = localStorage.getItem(LOCAL_KEY);
@@ -439,68 +452,77 @@
       renderApp();
     }
 
-    async function saveState() {
-      state.updatedAt = Date.now();
+    function saveState() {
       saveLocalState();
-      await pushToCloud();
-    }
-
-    async function pushToCloud() {
-      const payload = {
-        name: "FamiljBudget_Andrey_Alena",
-        data: {
-          updatedAt: state.updatedAt,
+      if (firebaseDbRef) {
+        firebaseDbRef.set({
           settings: state.settings,
           categories: state.categories,
           transactions: state.transactions
-        }
-      };
-
-      const res = await safeFetchJson(CLOUD_ENDPOINT, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      updateSyncBadge(!!res);
+        });
+      }
     }
 
-    async function pullFromCloud() {
-      const res = await safeFetchJson(CLOUD_ENDPOINT);
-      if (res && res.data) {
-        const cloudData = res.data;
-        if (cloudData.updatedAt && cloudData.updatedAt > (state.updatedAt || 0)) {
-          if (cloudData.transactions) state.transactions = cloudData.transactions;
-          if (cloudData.categories) state.categories = cloudData.categories;
-          if (cloudData.settings) state.settings = cloudData.settings;
-          state.updatedAt = cloudData.updatedAt;
-          saveLocalState();
+    // ИНИЦИАЛИЗАЦИЯ И ПОДКТЮЧЕНИЕ FIREBASE
+    function initFirebase() {
+      if (!state.firebaseUrl) {
+        updateSyncBadge(false);
+        return;
+      }
+
+      try {
+        if (!firebase.apps.length) {
+          firebase.initializeApp({ databaseURL: state.firebaseUrl });
         }
-        updateSyncBadge(true);
-      } else {
+        firebaseDbRef = firebase.database().ref('shared_budget');
+        
+        // Живое прослушивание изменений из облака
+        firebaseDbRef.on('value', (snapshot) => {
+          const val = snapshot.val();
+          if (val) {
+            if (val.transactions) state.transactions = val.transactions;
+            if (val.categories) state.categories = val.categories;
+            if (val.settings) state.settings = val.settings;
+            saveLocalState();
+            updateSyncBadge(true);
+          }
+        }, (err) => {
+          console.error(err);
+          updateSyncBadge(false);
+        });
+      } catch(e) {
+        console.error(e);
         updateSyncBadge(false);
       }
+    }
+
+    function handleSaveFirebaseConfig(e) {
+      e.preventDefault();
+      let url = document.getElementById('fbDbUrl').value.trim();
+      if (!url.endsWith('/')) url += '/';
+      state.firebaseUrl = url;
+      saveLocalState();
+      closeModal('firebaseModal');
+      initFirebase();
     }
 
     function updateSyncBadge(isOk) {
       const dot = document.getElementById('syncDot');
       const text = document.getElementById('syncText');
-      if (isOk) {
+      if (state.firebaseUrl && isOk) {
         dot.innerText = '🟢';
-        text.innerText = 'Общий Бюджет (Синхронно)';
+        text.innerText = 'Google Firebase Подключено';
       } else {
-        dot.innerText = '🟡';
-        text.innerText = 'Общий Бюджет (Автономно)';
+        dot.innerText = '⚪';
+        text.innerText = 'Локальный режим';
       }
     }
 
-    window.addEventListener('DOMContentLoaded', async () => {
+    window.addEventListener('DOMContentLoaded', () => {
       loadLocalState();
       document.getElementById('txDate').valueAsDate = new Date();
       renderApp();
-
-      await pullFromCloud();
-      setInterval(pullFromCloud, 4000); // проверяем обновления раз в 4 секунды
+      initFirebase();
     });
 
     function renderApp() {
@@ -815,6 +837,8 @@
       if (id === 'settingsModal') {
         document.getElementById('setP1').value = state.settings.partner1;
         document.getElementById('setP2').value = state.settings.partner2;
+      } else if (id === 'firebaseModal') {
+        document.getElementById('fbDbUrl').value = state.firebaseUrl || '';
       }
       document.getElementById(id).style.display = 'flex';
     }
