@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FamiljBudget 🇸🇪 - Общий Семейный Бюджет</title>
+  <title>FamiljBudget 🇸🇪 - Семейный Бюджет (Андрей и Алена)</title>
   <!-- Chart.js для графиков -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
@@ -39,8 +39,11 @@
     .btn-primary { background: var(--primary); border-color: var(--primary); }
     .btn-primary:hover { background: var(--primary-hover); }
     .btn-purple { background: var(--purple); border-color: var(--purple); }
+    .btn-success { background: var(--success); border-color: var(--success); }
 
-    .sync-status { display: flex; align-items: center; gap: 6px; font-size: 0.82rem; padding: 6px 12px; border-radius: 20px; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); color: var(--success); }
+    .sync-status { display: flex; align-items: center; gap: 6px; font-size: 0.82rem; padding: 6px 12px; border-radius: 20px; background: rgba(255,255,255,0.05); border: 1px solid var(--card-border); }
+
+    .cloud-banner { background: linear-gradient(135deg, #1e3a8a, #2563eb); border-radius: 12px; padding: 14px 18px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
 
     .nav-tabs { display: flex; gap: 8px; margin-bottom: 24px; background: var(--card-bg); padding: 6px; border-radius: 12px; border: 1px solid var(--card-border); }
     .tab-btn { flex: 1; background: transparent; border: none; color: var(--text-muted); padding: 10px; font-weight: 600; border-radius: 8px; cursor: pointer; text-align: center; transition: all 0.2s; }
@@ -103,7 +106,7 @@
       </div>
     </div>
 
-    <!-- Помесячный переключатель -->
+    <!-- Переключатель месяца -->
     <div class="month-picker">
       <button class="month-btn" onclick="changeMonth(-1)">←</button>
       <div class="month-display" id="currentMonthLabel">Сентябрь 2026</div>
@@ -112,7 +115,7 @@
 
     <div class="header-actions">
       <div class="sync-status" id="syncStatusBadge">
-        <span id="syncDot">🟢</span> <span id="syncText">Общий Семейный Облачный Бюджет</span>
+        <span id="syncDot">⚪</span> <span id="syncText">Проверка связи...</span>
       </div>
       <button class="btn btn-purple" onclick="copyRecurringPayments()">
         📋 Перенести регулярные
@@ -123,11 +126,24 @@
     </div>
   </header>
 
-  <!-- Переключатель партнеров -->
+  <!-- Информационная плашка облака -->
+  <div class="cloud-banner" id="cloudBanner">
+    <div>
+      <div style="font-weight: 700; font-size: 1rem;" id="bannerTitle">🌐 Облачная синхронизация не активирована</div>
+      <div style="font-size: 0.85rem; opacity: 0.9; margin-top: 2px;" id="bannerDesc">
+        Нажмите кнопку справа, чтобы создать единую онлайн-базу в интернете.
+      </div>
+    </div>
+    <button class="btn btn-success" id="bannerBtn" onclick="initRealCloud()">
+      🚀 Создать базу для семьи
+    </button>
+  </div>
+
+  <!-- Переключатель вкладок -->
   <div class="nav-tabs">
     <button class="tab-btn active" onclick="switchTab('all')" id="tabAll">🏠 Общий семейный бюджет</button>
-    <button class="tab-btn" onclick="switchTab('p1')" id="tabP1">👤 Партнер 1</button>
-    <button class="tab-btn" onclick="switchTab('p2')" id="tabP2">👤 Партнер 2</button>
+    <button class="tab-btn" onclick="switchTab('p1')" id="tabP1">👤 Андрей</button>
+    <button class="tab-btn" onclick="switchTab('p2')" id="tabP2">👤 Алена</button>
   </div>
 
   <!-- Карточки итогов -->
@@ -347,16 +363,17 @@
   </div>
 
   <script>
-    // ПРЯМОЙ ЕДИНЫЙ ОБЛАЧНЫЙ СЕРВЕР СЕМЬИ
-    const CLOUD_URL = 'https://familj-budget-swe-default-rtdb.europe-west1.firebasedatabase.app/shared_family_budget.json';
-    const STORAGE_KEY = 'familj_budget_se_main_v1';
+    // РЕАЛЬНЫЙ ПУБЛИЧНЫЙ СЕРВИС ХРАНЕНИЯ JSON (NPOINT.IO)
+    const NPOINT_API = 'https://api.npoint.io';
+    const LOCAL_KEY = 'familj_budget_se_final_v1';
 
     let state = {
+      binId: '',
       updatedAt: 0,
       activeTab: 'all',
       currentYear: 2026,
       currentMonth: 8,
-      settings: { partner1: 'Антон', partner2: 'Мария' },
+      settings: { partner1: 'Андрей', partner2: 'Алена' },
       categories: [
         { id: 'cat_boende', name: 'Boende (Жилье/Hyra)', type: 'expense', icon: '🏠' },
         { id: 'cat_mat', name: 'Mat (ICA/Willys/Coop)', type: 'expense', icon: '🛒' },
@@ -375,14 +392,20 @@
 
     let catChartInstance = null;
     let partnerChartInstance = null;
+    let syncInterval = null;
 
     const monthNames = [
       'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 
       'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
     ];
 
+    function getBinIdFromHash() {
+      const hash = window.location.hash.replace('#', '').trim();
+      return (hash && hash.length >= 5) ? hash : '';
+    }
+
     function loadLocalState() {
-      const saved = localStorage.getItem(STORAGE_KEY);
+      const saved = localStorage.getItem(LOCAL_KEY);
       if (saved) {
         try { state = JSON.parse(saved); } catch(e){}
       } else {
@@ -394,30 +417,80 @@
         ];
         saveLocalState();
       }
+
+      const urlBinId = getBinIdFromHash();
+      if (urlBinId) {
+        state.binId = urlBinId;
+      }
     }
 
     function saveLocalState() {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      localStorage.setItem(LOCAL_KEY, JSON.stringify(state));
       renderApp();
     }
 
     async function saveState() {
       state.updatedAt = Date.now();
       saveLocalState();
-      await pushToCloud();
+      if (state.binId) {
+        await pushToCloud();
+      }
     }
 
-    // РАБОТА С ЕДИНЫМ ОБЛАКОМ
-    async function pushToCloud() {
+    // ИНИЦИАЛИЗАЦИЯ НАСТОЯЩЕЙ БАЗЫ В ИНТЕРНЕТЕ
+    async function initRealCloud() {
       try {
-        await fetch(CLOUD_URL, {
-          method: 'PUT',
+        const btn = document.getElementById('bannerBtn');
+        btn.innerText = '⏳ Создаем базу...';
+        btn.disabled = true;
+
+        state.updatedAt = Date.now();
+
+        const res = await fetch(NPOINT_API, {
+          method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            transactions: state.transactions,
-            categories: state.categories,
+            updatedAt: state.updatedAt,
             settings: state.settings,
-            updatedAt: state.updatedAt
+            categories: state.categories,
+            transactions: state.transactions
+          })
+        });
+
+        const data = await res.json();
+        if (data && data.id) {
+          state.binId = data.id;
+          window.location.hash = data.id;
+          saveLocalState();
+          updateCloudBannerUI();
+          setupSyncLoop();
+          alert('✅ Облачная ячейка успешно создана в интернете!\n\nСкопируйте URL-адрес из строки браузера (он теперь содержит ваш хвостик #' + data.id + ') и отправьте Алене.');
+        } else {
+          alert('Не удалось получить ответ от сервера. Попробуйте ещё раз.');
+        }
+      } catch(e) {
+        alert('Ошибка создания базы: ' + e.message);
+      } finally {
+        const btn = document.getElementById('bannerBtn');
+        if (btn) {
+          btn.innerText = '🚀 Создать базу для семьи';
+          btn.disabled = false;
+        }
+      }
+    }
+
+    // ОБМЕН ДАННЫМИ С NPOINT.IO
+    async function pushToCloud() {
+      if (!state.binId) return;
+      try {
+        await fetch(`${NPOINT_API}/${state.binId}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            updatedAt: state.updatedAt,
+            settings: state.settings,
+            categories: state.categories,
+            transactions: state.transactions
           })
         });
         updateSyncBadge(true);
@@ -428,21 +501,17 @@
     }
 
     async function pullFromCloud() {
+      if (!state.binId) return;
       try {
-        const res = await fetch(CLOUD_URL);
+        const res = await fetch(`${NPOINT_API}/${state.binId}`);
         if (res.ok) {
           const cloudData = await res.json();
-          if (cloudData) {
-            if (!cloudData.updatedAt || cloudData.updatedAt >= (state.updatedAt || 0)) {
-              if (cloudData.transactions) state.transactions = cloudData.transactions;
-              if (cloudData.categories) state.categories = cloudData.categories;
-              if (cloudData.settings) state.settings = cloudData.settings;
-              if (cloudData.updatedAt) state.updatedAt = cloudData.updatedAt;
-              saveLocalState();
-            }
-          } else {
-            // Первый запуск — инициализируем базу
-            await pushToCloud();
+          if (cloudData && cloudData.updatedAt && cloudData.updatedAt > (state.updatedAt || 0)) {
+            if (cloudData.transactions) state.transactions = cloudData.transactions;
+            if (cloudData.categories) state.categories = cloudData.categories;
+            if (cloudData.settings) state.settings = cloudData.settings;
+            state.updatedAt = cloudData.updatedAt;
+            saveLocalState();
           }
           updateSyncBadge(true);
         }
@@ -452,15 +521,50 @@
       }
     }
 
+    function updateCloudBannerUI() {
+      const title = document.getElementById('bannerTitle');
+      const desc = document.getElementById('bannerDesc');
+      const btn = document.getElementById('bannerBtn');
+
+      if (state.binId) {
+        title.innerText = '🟢 Облачная семейная база подключена!';
+        desc.innerText = 'Скопируйте адрес страницы из строки браузера и отправьте супруге.';
+        btn.innerText = '📋 Скопировать ссылку для Алены';
+        btn.onclick = copyFullUrl;
+      } else {
+        title.innerText = '🌐 Облачная синхронизация не активирована';
+        desc.innerText = 'Нажмите кнопку справа, чтобы создать единую онлайн-базу в интернете.';
+        btn.innerText = '🚀 Создать базу для семьи';
+        btn.onclick = initRealCloud;
+      }
+    }
+
+    function copyFullUrl() {
+      const fullUrl = window.location.href;
+      navigator.clipboard.writeText(fullUrl).then(() => {
+        alert('✅ Ссылка скопирована!\n\nОтправьте её Алене. Открыв эту ссылку, она увидит ваши данные.');
+      }).catch(() => {
+        prompt('Скопируйте эту ссылку полностью и отправьте Алене:', fullUrl);
+      });
+    }
+
     function updateSyncBadge(isOk) {
       const dot = document.getElementById('syncDot');
       const text = document.getElementById('syncText');
-      if (isOk) {
-        dot.innerText = '🟢';
-        text.innerText = 'Общий Семейный Облачный Бюджет';
+      if (state.binId) {
+        dot.innerText = isOk ? '🟢' : '🟡';
+        text.innerText = isOk ? 'Облако вышки: #' + state.binId : 'Подключение...';
       } else {
-        dot.innerText = '🟡';
-        text.innerText = 'Переподключение к облаку...';
+        dot.innerText = '⚪';
+        text.innerText = 'Локальный режим';
+      }
+    }
+
+    function setupSyncLoop() {
+      if (syncInterval) clearInterval(syncInterval);
+      if (state.binId) {
+        pullFromCloud();
+        syncInterval = setInterval(pullFromCloud, 3000); // каждые 3 секунды
       }
     }
 
@@ -468,10 +572,12 @@
       loadLocalState();
       document.getElementById('txDate').valueAsDate = new Date();
       renderApp();
+      updateCloudBannerUI();
 
-      // Первичное считывание и фоновый опрос каждые 3 секунды
-      await pullFromCloud();
-      setInterval(pullFromCloud, 3000);
+      if (state.binId) {
+        await pullFromCloud();
+        setupSyncLoop();
+      }
     });
 
     function renderApp() {
