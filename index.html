@@ -29,9 +29,6 @@
     <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    <!-- GunDB P2P Realtime Storage CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
-
     <style>
         ::-webkit-scrollbar {
             width: 6px;
@@ -84,7 +81,7 @@
                     <p class="text-xs text-slate-400 font-medium flex items-center gap-2 mt-0.5">
                         <span>Семейный учет • Швеция 🇸🇪</span>
                         <span id="syncStatusBadge" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> 🟢 Облако подключено (Авто-синхронизация)
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> 🟢 Готово к работе
                         </span>
                     </p>
                 </div>
@@ -204,6 +201,7 @@
                 </div>
             </section>
 
+            <!-- Partner Shares -->
             <section class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div class="glass-card p-4 rounded-2xl border border-cyan-500/20 flex items-center justify-between">
                     <div class="flex items-center gap-3">
@@ -262,6 +260,7 @@
                 </div>
             </section>
 
+            <!-- Family Transactions Section -->
             <section class="glass-card p-5 rounded-2xl space-y-4">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
                     <div class="flex items-center gap-2">
@@ -492,7 +491,7 @@
         </div>
     </div>
 
-    <!-- Settings & Category Manager Modal -->
+    <!-- Settings Modal -->
     <div id="settingsModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="glass-card max-w-md w-full p-6 rounded-2xl space-y-5 border border-slate-700 shadow-2xl max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center pb-2 border-b border-slate-800">
@@ -606,8 +605,8 @@
         const now = new Date();
         const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
-        // Global static shared room key so NO CODE input is needed!
-        const SHARED_CLOUD_ROOM_KEY = 'takome988_familj_budget_shared_global_v1';
+        const CLOUD_ENDPOINT = 'https://keyvalue.immanuel.co/api/KeyVal/GetValue/takome988_familj_se/state';
+        const CLOUD_POST_ENDPOINT = 'https://keyvalue.immanuel.co/api/KeyVal/PostValue/takome988_familj_se/state/';
 
         const DEMO_TRANSACTIONS = [
             { id: 'tx_1', user: 'p1', title: 'Зарплата (Lön efter skatt)', amount: 36000, type: 'income', category: 'salary', date: `${currentMonthStr}-25`, isRecurring: true },
@@ -638,79 +637,53 @@
         let familyChartInstance = null;
         let partnerComparisonChartInstance = null;
 
-        // Initialize robust GunDB peers for seamless cross-device auto-sync
-        const gun = Gun([
-            'https://gun-manhattan.herokuapp.com/gun',
-            'https://gundb-relay-uncensored.herokuapp.com/gun',
-            'https://peer.wallrpc.com/gun'
-        ]);
-
-        const gunNode = gun.get(SHARED_CLOUD_ROOM_KEY);
-
-        function initCloudSync() {
-            gunNode.on((data) => {
-                if (data && data.payload) {
-                    try {
-                        const parsed = JSON.parse(data.payload);
-                        if (parsed.updatedAt && parsed.updatedAt <= window.AppState.lastCloudUpdate) {
-                            return; // Skip older payloads
-                        }
-                        
-                        window.AppState.lastCloudUpdate = parsed.updatedAt || Date.now();
-                        if (parsed.transactions) window.AppState.transactions = parsed.transactions;
-                        if (parsed.categories) window.AppState.categories = { ...DEFAULT_CATEGORIES, ...parsed.categories };
-                        if (parsed.settings) window.AppState.settings = parsed.settings;
-
-                        saveToLocalStorage();
-                        updatePartnerLabels();
-                        populateCategoryDropdowns();
-                        renderAll();
-                        updateSyncBadge(true);
-                    } catch (e) {
-                        console.warn("Cloud sync parse error", e);
-                    }
-                }
-            });
-
-            // Initial pull and periodic background refresh check every 8 seconds
-            pullFromCloud(false);
-            setInterval(() => {
-                pullFromCloud(false);
-            }, 8000);
-        }
-
-        function pullFromCloud(showToastNotice = false) {
+        async function pullFromCloud(showToastNotice = false) {
             const icon = document.getElementById('syncSpinnerIcon');
             if (icon) icon.classList.add('fa-spin');
 
-            gunNode.once((data) => {
-                if (icon) icon.classList.remove('fa-spin');
-                if (data && data.payload) {
-                    try {
-                        const parsed = JSON.parse(data.payload);
-                        window.AppState.lastCloudUpdate = parsed.updatedAt || Date.now();
-                        if (parsed.transactions) window.AppState.transactions = parsed.transactions;
-                        if (parsed.categories) window.AppState.categories = { ...DEFAULT_CATEGORIES, ...parsed.categories };
-                        if (parsed.settings) window.AppState.settings = parsed.settings;
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 3000);
 
-                        saveToLocalStorage();
-                        updatePartnerLabels();
-                        populateCategoryDropdowns();
-                        renderAll();
-                        updateSyncBadge(true);
-                        if (showToastNotice) showToast('Данные успешно обновлены из облака!');
-                    } catch (e) {
-                        if (showToastNotice) showToast('Ошибка при загрузке облака', 'error');
+            try {
+                const response = await fetch(CLOUD_ENDPOINT, { signal: controller.signal });
+                clearTimeout(timeoutId);
+                
+                if (response.ok) {
+                    const dataText = await response.text();
+                    if (dataText && dataText !== "null" && dataText.trim() !== "") {
+                        const parsed = JSON.parse(dataText);
+                        if (parsed && parsed.updatedAt && parsed.updatedAt > window.AppState.lastCloudUpdate) {
+                            window.AppState.lastCloudUpdate = parsed.updatedAt;
+                            if (parsed.transactions) window.AppState.transactions = parsed.transactions;
+                            if (parsed.categories) window.AppState.categories = { ...DEFAULT_CATEGORIES, ...parsed.categories };
+                            if (parsed.settings) window.AppState.settings = parsed.settings;
+
+                            saveToLocalStorage();
+                            updatePartnerLabels();
+                            populateCategoryDropdowns();
+                            renderAll();
+                            if (showToastNotice) showToast('Данные успешно загружены из облака!');
+                        } else if (showToastNotice) {
+                            showToast('Данные уже актуальны!');
+                        }
+                    } else if (showToastNotice) {
+                        showToast('Облачное хранилище готово');
                     }
-                } else if (showToastNotice) {
-                    showToast('Облако готово и синхронизировано');
+                    updateSyncBadge(true);
                 }
-            });
+            } catch (err) {
+                console.warn('Cloud sync offline fallback active', err);
+                updateSyncBadge(false);
+                if (showToastNotice) showToast('Работа в локальном режиме', 'error');
+            } finally {
+                if (icon) icon.classList.remove('fa-spin');
+            }
         }
 
-        function pushStateToCloud() {
+        async function pushStateToCloud() {
             const nowTs = Date.now();
             window.AppState.lastCloudUpdate = nowTs;
+            saveToLocalStorage();
 
             const payload = JSON.stringify({
                 transactions: window.AppState.transactions,
@@ -719,22 +692,40 @@
                 updatedAt: nowTs
             });
 
-            gunNode.put({ payload: payload });
-            saveToLocalStorage();
-            updateSyncBadge(true);
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 3000);
+
+            try {
+                await fetch(CLOUD_POST_ENDPOINT + encodeURIComponent(payload), {
+                    method: 'POST',
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
+                updateSyncBadge(true);
+            } catch (err) {
+                console.warn('Cloud update saved locally', err);
+                updateSyncBadge(false);
+            }
         }
 
         function saveToLocalStorage() {
-            localStorage.setItem('se_family_budget_tx', JSON.stringify(window.AppState.transactions));
-            localStorage.setItem('se_family_budget_settings', JSON.stringify(window.AppState.settings));
-            localStorage.setItem('se_family_budget_categories', JSON.stringify(window.AppState.categories));
+            try {
+                localStorage.setItem('se_family_budget_tx', JSON.stringify(window.AppState.transactions));
+                localStorage.setItem('se_family_budget_settings', JSON.stringify(window.AppState.settings));
+                localStorage.setItem('se_family_budget_categories', JSON.stringify(window.AppState.categories));
+            } catch(e) {}
         }
 
         function updateSyncBadge(connected) {
             const badge = document.getElementById('syncStatusBadge');
             if (badge) {
-                badge.className = "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
-                badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> 🟢 Облако подключено (Авто-синхронизация)`;
+                if (connected) {
+                    badge.className = "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
+                    badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> 🟢 Облако подключено (Авто-синхронизация)`;
+                } else {
+                    badge.className = "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20";
+                    badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span> 🟡 Локальный режим`;
+                }
             }
         }
 
@@ -1182,7 +1173,9 @@
         }
 
         function renderFamilyCategoryChart(dataList) {
-            const ctx = document.getElementById('familyCategoryChart').getContext('2d');
+            const canvas = document.getElementById('familyCategoryChart');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
             const expenses = dataList.filter(t => t.type === 'expense');
 
             const categorySums = {};
@@ -1209,7 +1202,7 @@
                     labels: labels,
                     datasets: [{
                         data: data,
-                        backgroundColor: colors,
+                        backgroundColor: colors.length > 0 ? colors : ['#334155'],
                         borderColor: '#090d16',
                         borderWidth: 3
                     }]
@@ -1227,7 +1220,9 @@
         }
 
         function renderPartnerComparisonChart(dataList) {
-            const ctx = document.getElementById('partnerComparisonChart').getContext('2d');
+            const canvas = document.getElementById('partnerComparisonChart');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
             const expenses = dataList.filter(t => t.type === 'expense');
 
             const categoriesUsed = Array.from(new Set(expenses.map(t => t.category)));
@@ -1421,6 +1416,7 @@
 
         function showToast(message, type = 'success') {
             const container = document.getElementById('toastContainer');
+            if (!container) return;
             const toast = document.createElement('div');
             
             const isError = type === 'error';
@@ -1438,10 +1434,34 @@
             }, 3000);
         }
 
-        window.onload = function() {
-            const savedTx = localStorage.getItem('se_family_budget_tx');
-            const savedSet = localStorage.getItem('se_family_budget_settings');
-            const savedCat = localStorage.getItem('se_family_budget_categories');
+        // Initialize Application Immediately on DOM Ready
+        window.addEventListener('DOMContentLoaded', function() {
+            try {
+                const savedTx = localStorage.getItem('se_family_budget_tx');
+                const savedSet = localStorage.getItem('se_family_budget_settings');
+                const savedCat = localStorage.getItem('se_family_budget_categories');
 
-            if (savedTx) try { window.AppState.transactions = JSON.parse(savedTx); } catch(e){}
-            if (savedSet) try { window.AppState.settings = JSON.parse(savedSet
+                if (savedTx) window.AppState.transactions = JSON.parse(savedTx);
+                if (savedSet) window.AppState.settings = JSON.parse(savedSet);
+                if (savedCat) window.AppState.categories = JSON.parse(savedCat);
+            } catch(e) {
+                console.warn('LocalStorage parse warning', e);
+            }
+
+            updatePartnerLabels();
+            populateCategoryDropdowns();
+            renderAll();
+
+            // Background non-blocking sync
+            setTimeout(() => {
+                pullFromCloud(false);
+            }, 500);
+
+            // Periodic quiet background sync every 15 seconds
+            setInterval(() => {
+                pullFromCloud(false);
+            }, 15000);
+        });
+    </script>
+</body>
+</html>
