@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>FamiljBudget 🇸🇪 - Семейный Бюджет (Андрей и Алена)</title>
-  <!-- Chart.js для визуализации -->
+  <!-- Chart.js для диаграмм -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root {
@@ -39,11 +39,8 @@
     .btn-primary { background: var(--primary); border-color: var(--primary); }
     .btn-primary:hover { background: var(--primary-hover); }
     .btn-purple { background: var(--purple); border-color: var(--purple); }
-    .btn-success { background: var(--success); border-color: var(--success); }
 
-    .sync-status { display: flex; align-items: center; gap: 6px; font-size: 0.82rem; padding: 6px 12px; border-radius: 20px; background: rgba(255,255,255,0.05); border: 1px solid var(--card-border); }
-
-    .cloud-banner { background: linear-gradient(135deg, #1e3a8a, #2563eb); border-radius: 12px; padding: 14px 18px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+    .sync-status { display: flex; align-items: center; gap: 6px; font-size: 0.82rem; padding: 6px 12px; border-radius: 20px; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); color: var(--success); }
 
     .nav-tabs { display: flex; gap: 8px; margin-bottom: 24px; background: var(--card-bg); padding: 6px; border-radius: 12px; border: 1px solid var(--card-border); }
     .tab-btn { flex: 1; background: transparent; border: none; color: var(--text-muted); padding: 10px; font-weight: 600; border-radius: 8px; cursor: pointer; text-align: center; transition: all 0.2s; }
@@ -106,7 +103,7 @@
       </div>
     </div>
 
-    <!-- Переключатель месяца -->
+    <!-- Помесячный переключатель -->
     <div class="month-picker">
       <button class="month-btn" onclick="changeMonth(-1)">←</button>
       <div class="month-display" id="currentMonthLabel">Сентябрь 2026</div>
@@ -115,7 +112,7 @@
 
     <div class="header-actions">
       <div class="sync-status" id="syncStatusBadge">
-        <span id="syncDot">⚪</span> <span id="syncText">Проверка связи...</span>
+        <span id="syncDot">🟢</span> <span id="syncText">Общий Семейный Бюджет</span>
       </div>
       <button class="btn btn-purple" onclick="copyRecurringPayments()">
         📋 Перенести регулярные
@@ -123,30 +120,20 @@
       <button class="btn" onclick="openModal('settingsModal')">
         ⚙️ Настройки
       </button>
+      <button class="btn" onclick="openModal('backupModal')">
+        💾 Бэкап
+      </button>
     </div>
   </header>
 
-  <!-- Информационный баннер -->
-  <div class="cloud-banner" id="cloudBanner">
-    <div>
-      <div style="font-weight: 700; font-size: 1rem;" id="bannerTitle">🌐 Облачная синхронизация не активирована</div>
-      <div style="font-size: 0.85rem; opacity: 0.9; margin-top: 2px;" id="bannerDesc">
-        Нажмите кнопку справа, чтобы создать единую базу для вашей семьи.
-      </div>
-    </div>
-    <button class="btn btn-success" id="bannerBtn" onclick="initRealCloud()">
-      🚀 Создать базу для семьи
-    </button>
-  </div>
-
-  <!-- Переключатель вкладок -->
+  <!-- Переключатель партнеров -->
   <div class="nav-tabs">
     <button class="tab-btn active" onclick="switchTab('all')" id="tabAll">🏠 Общий семейный бюджет</button>
     <button class="tab-btn" onclick="switchTab('p1')" id="tabP1">👤 Андрей</button>
     <button class="tab-btn" onclick="switchTab('p2')" id="tabP2">👤 Алена</button>
   </div>
 
-  <!-- Сводные карточки -->
+  <!-- Карточки итогов -->
   <div class="summary-grid">
     <div class="card">
       <div class="card-title">Доходы (Inkomster)</div>
@@ -362,11 +349,34 @@
     </div>
   </div>
 
+  <!-- МОДАЛЬНОЕ ОКНО: Бэкап -->
+  <div class="modal-overlay" id="backupModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Резервное копирование (JSON)</h3>
+        <button class="modal-close" onclick="closeModal('backupModal')">✕</button>
+      </div>
+      <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 16px;">
+        Вы можете сохранить файл со всеми данными или передать его между устройствами напрямую.
+      </p>
+      <div style="display: flex; gap: 10px; flex-direction: column;">
+        <button class="btn btn-primary" onclick="exportData()" style="justify-content: center;">
+          📥 Скачать файл данных (Export JSON)
+        </button>
+        <label class="btn" style="justify-content: center; cursor: pointer;">
+          📤 Загрузить файл данных (Import JSON)
+          <input type="file" accept=".json" onchange="importData(event)" style="display: none;">
+        </label>
+      </div>
+    </div>
+  </div>
+
   <script>
-    const LOCAL_KEY = 'familj_budget_se_final_v2';
+    const LOCAL_KEY = 'familj_budget_se_stable_v1';
+    // Облачная ячейка для общей синхронизации
+    const CLOUD_ENDPOINT = 'https://api.restful-api.dev/objects/ff8081819280d09d019283f511223344';
 
     let state = {
-      binId: '',
       updatedAt: 0,
       activeTab: 'all',
       currentYear: 2026,
@@ -390,16 +400,23 @@
 
     let catChartInstance = null;
     let partnerChartInstance = null;
-    let syncInterval = null;
 
     const monthNames = [
       'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 
       'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
     ];
 
-    function getBinIdFromHash() {
-      const hash = window.location.hash.replace('#', '').trim();
-      return (hash && hash.length >= 5) ? hash : '';
+    // Безопасный сетевой запрос, предотвращающий ошибки SyntaxError
+    async function safeFetchJson(url, options = {}) {
+      try {
+        const res = await fetch(url, options);
+        if (!res.ok) return null;
+        const contentType = res.headers.get('content-type') || '';
+        if (!contentType.includes('application/json')) return null;
+        return await res.json();
+      } catch (e) {
+        return null;
+      }
     }
 
     function loadLocalState() {
@@ -415,11 +432,6 @@
         ];
         saveLocalState();
       }
-
-      const urlBinId = getBinIdFromHash();
-      if (urlBinId) {
-        state.binId = urlBinId;
-      }
     }
 
     function saveLocalState() {
@@ -430,89 +442,34 @@
     async function saveState() {
       state.updatedAt = Date.now();
       saveLocalState();
-      if (state.binId) {
-        await pushToCloud();
-      }
+      await pushToCloud();
     }
 
-    // ИНИЦИАЛИЗАЦИЯ НАДЕЖНОГО KV-ХРАНИЛИЩА
-    async function initRealCloud() {
-      try {
-        const btn = document.getElementById('bannerBtn');
-        btn.innerText = '⏳ Создаем базу...';
-        btn.disabled = true;
-
-        const secretKey = 'fam_' + Math.random().toString(36).substring(2, 10) + Date.now().toString(36).substring(4, 8);
-        state.binId = secretKey;
-        state.updatedAt = Date.now();
-
-        const ok = await pushToCloud();
-        if (ok) {
-          window.location.hash = secretKey;
-          saveLocalState();
-          updateCloudBannerUI();
-          setupSyncLoop();
-          alert('✅ Облачная семейная база успешно создана!\n\nСкопируйте URL из строки браузера (он содержит ваш код #' + secretKey + ') и отправьте Алене.');
-        } else {
-          state.binId = '';
-          alert('Не удалось создать базу в облаке. Проверьте подключение к интернету.');
-        }
-      } catch(e) {
-        alert('Ошибка создания базы: ' + e.message);
-      } finally {
-        const btn = document.getElementById('bannerBtn');
-        if (btn) {
-          btn.innerText = '🚀 Создать базу для семьи';
-          btn.disabled = false;
-        }
-      }
-    }
-
-    // БЕЗОПАСНЫЙ ОБМЕН ДАННЫМИ БЕЗ JSON-ОШИБОК
     async function pushToCloud() {
-      if (!state.binId) return false;
-      try {
-        const res = await fetch(`https://kvdb.io/${state.binId}/data`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            updatedAt: state.updatedAt,
-            settings: state.settings,
-            categories: state.categories,
-            transactions: state.transactions
-          })
-        });
-
-        if (res.ok) {
-          updateSyncBadge(true);
-          return true;
+      const payload = {
+        name: "FamiljBudget_Andrey_Alena",
+        data: {
+          updatedAt: state.updatedAt,
+          settings: state.settings,
+          categories: state.categories,
+          transactions: state.transactions
         }
-        updateSyncBadge(false);
-        return false;
-      } catch(e) {
-        console.error('Ошибка записи:', e);
-        updateSyncBadge(false);
-        return false;
-      }
+      };
+
+      const res = await safeFetchJson(CLOUD_ENDPOINT, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      updateSyncBadge(!!res);
     }
 
     async function pullFromCloud() {
-      if (!state.binId) return;
-      try {
-        const res = await fetch(`https://kvdb.io/${state.binId}/data`);
-        if (!res.ok) {
-          updateSyncBadge(false);
-          return;
-        }
-
-        const text = await res.text();
-        if (!text || text.trim().startsWith('<')) {
-          updateSyncBadge(false);
-          return;
-        }
-
-        const cloudData = JSON.parse(text);
-        if (cloudData && cloudData.updatedAt && cloudData.updatedAt > (state.updatedAt || 0)) {
+      const res = await safeFetchJson(CLOUD_ENDPOINT);
+      if (res && res.data) {
+        const cloudData = res.data;
+        if (cloudData.updatedAt && cloudData.updatedAt > (state.updatedAt || 0)) {
           if (cloudData.transactions) state.transactions = cloudData.transactions;
           if (cloudData.categories) state.categories = cloudData.categories;
           if (cloudData.settings) state.settings = cloudData.settings;
@@ -520,56 +477,20 @@
           saveLocalState();
         }
         updateSyncBadge(true);
-      } catch(e) {
-        console.error('Ошибка чтения:', e);
+      } else {
         updateSyncBadge(false);
       }
-    }
-
-    function updateCloudBannerUI() {
-      const title = document.getElementById('bannerTitle');
-      const desc = document.getElementById('bannerDesc');
-      const btn = document.getElementById('bannerBtn');
-
-      if (state.binId) {
-        title.innerText = '🟢 Облачная семейная база подключена!';
-        desc.innerText = 'Скопируйте адрес страницы из строки браузера и отправьте супруге.';
-        btn.innerText = '📋 Скопировать ссылку для Алены';
-        btn.onclick = copyFullUrl;
-      } else {
-        title.innerText = '🌐 Облачная синхронизация не активирована';
-        desc.innerText = 'Нажмите кнопку справа, чтобы создать единую онлайн-базу в интернете.';
-        btn.innerText = '🚀 Создать базу для семьи';
-        btn.onclick = initRealCloud;
-      }
-    }
-
-    function copyFullUrl() {
-      const fullUrl = window.location.href;
-      navigator.clipboard.writeText(fullUrl).then(() => {
-        alert('✅ Ссылка скопирована!\n\nОтправьте её Алене. Открыв эту ссылку, она увидит ваши данные.');
-      }).catch(() => {
-        prompt('Скопируйте эту ссылку полностью и отправьте Алене:', fullUrl);
-      });
     }
 
     function updateSyncBadge(isOk) {
       const dot = document.getElementById('syncDot');
       const text = document.getElementById('syncText');
-      if (state.binId) {
-        dot.innerText = isOk ? '🟢' : '🟡';
-        text.innerText = isOk ? 'Облако: #' + state.binId : 'Подключение...';
+      if (isOk) {
+        dot.innerText = '🟢';
+        text.innerText = 'Общий Бюджет (Синхронно)';
       } else {
-        dot.innerText = '⚪';
-        text.innerText = 'Локальный режим';
-      }
-    }
-
-    function setupSyncLoop() {
-      if (syncInterval) clearInterval(syncInterval);
-      if (state.binId) {
-        pullFromCloud();
-        syncInterval = setInterval(pullFromCloud, 3000);
+        dot.innerText = '🟡';
+        text.innerText = 'Общий Бюджет (Автономно)';
       }
     }
 
@@ -577,12 +498,9 @@
       loadLocalState();
       document.getElementById('txDate').valueAsDate = new Date();
       renderApp();
-      updateCloudBannerUI();
 
-      if (state.binId) {
-        await pullFromCloud();
-        setupSyncLoop();
-      }
+      await pullFromCloud();
+      setInterval(pullFromCloud, 4000); // проверяем обновления раз в 4 секунды
     });
 
     function renderApp() {
@@ -903,6 +821,34 @@
 
     function closeModal(id) {
       document.getElementById(id).style.display = 'none';
+    }
+
+    function exportData() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `FamiljBudget_${new Date().toISOString().slice(0,10)}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    }
+
+    function importData(e) {
+      const fileReader = new FileReader();
+      fileReader.onload = function(event) {
+        try {
+          const importedState = JSON.parse(event.target.result);
+          if (importedState.transactions && importedState.categories) {
+            state = importedState;
+            saveState();
+            closeModal('backupModal');
+            alert('Данные успешно импортированы!');
+          }
+        } catch(err) {
+          alert('Ошибка чтения файла!');
+        }
+      };
+      fileReader.readAsText(e.target.files[0]);
     }
   </script>
 </body>
