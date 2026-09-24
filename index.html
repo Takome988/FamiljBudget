@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>FamiljBudget 🇸🇪 - Семейный Бюджет</title>
-  <!-- Chart.js для визуализации графиков -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root {
@@ -21,399 +20,117 @@
       --text-muted: #94a3b8;
     }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: var(--bg-color); color: var(--text-main); padding: 16px; max-width: 1200px; margin: 0 auto; }
 
-    body {
-      background-color: var(--bg-color);
-      color: var(--text-main);
-      padding: 16px;
-      max-width: 1200px;
-      margin: 0 auto;
-    }
+    header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px; padding-bottom: 20px; border-bottom: 1px solid var(--card-border); margin-bottom: 20px; }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand h1 { font-size: 1.5rem; font-weight: 700; background: linear-gradient(to right, #3b82f6, #60a5fa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 
-    /* Шапка сайта */
-    header {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: space-between;
-      align-items: center;
-      gap: 16px;
-      padding-bottom: 20px;
-      border-bottom: 1px solid var(--card-border);
-      margin-bottom: 20px;
-    }
+    .month-picker { display: flex; align-items: center; background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 4px; }
+    .month-btn { background: transparent; border: none; color: var(--text-main); padding: 8px 12px; cursor: pointer; font-size: 1.1rem; border-radius: 8px; }
+    .month-btn:hover { background: var(--card-border); }
+    .month-display { font-weight: 600; padding: 0 16px; min-width: 140px; text-align: center; }
 
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
+    .header-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .btn { background: var(--card-bg); border: 1px solid var(--card-border); color: var(--text-main); padding: 8px 14px; border-radius: 8px; cursor: pointer; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s; }
+    .btn:hover { background: var(--card-border); }
+    .btn-primary { background: var(--primary); border-color: var(--primary); }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-purple { background: var(--purple); border-color: var(--purple); }
+    .btn-success { background: var(--success); border-color: var(--success); }
 
-    .brand h1 {
-      font-size: 1.5rem;
-      font-weight: 700;
-      background: linear-gradient(to right, #3b82f6, #60a5fa);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
+    .sync-status { display: flex; align-items: center; gap: 6px; font-size: 0.82rem; padding: 6px 12px; border-radius: 20px; background: rgba(255,255,255,0.05); border: 1px solid var(--card-border); }
 
-    /* Навигация по месяцам */
-    .month-picker {
-      display: flex;
-      align-items: center;
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 12px;
-      padding: 4px;
-    }
+    .nav-tabs { display: flex; gap: 8px; margin-bottom: 24px; background: var(--card-bg); padding: 6px; border-radius: 12px; border: 1px solid var(--card-border); }
+    .tab-btn { flex: 1; background: transparent; border: none; color: var(--text-muted); padding: 10px; font-weight: 600; border-radius: 8px; cursor: pointer; text-align: center; transition: all 0.2s; }
+    .tab-btn.active { background: var(--primary); color: white; }
 
-    .month-btn {
-      background: transparent;
-      border: none;
-      color: var(--text-main);
-      padding: 8px 12px;
-      cursor: pointer;
-      font-size: 1.1rem;
-      border-radius: 8px;
-    }
-
-    .month-btn:hover {
-      background: var(--card-border);
-    }
-
-    .month-display {
-      font-weight: 600;
-      padding: 0 16px;
-      min-width: 140px;
-      text-align: center;
-    }
-
-    /* Панель управления шапки */
-    .header-actions {
-      display: flex;
-      gap: 8px;
-    }
-
-    .btn {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      color: var(--text-main);
-      padding: 8px 14px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 0.9rem;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      transition: all 0.2s;
-    }
-
-    .btn:hover {
-      background: var(--card-border);
-    }
-
-    .btn-primary {
-      background: var(--primary);
-      border-color: var(--primary);
-    }
-
-    .btn-primary:hover {
-      background: var(--primary-hover);
-    }
-
-    .btn-purple {
-      background: var(--purple);
-      border-color: var(--purple);
-    }
-
-    .btn-purple:hover {
-      opacity: 0.9;
-    }
-
-    /* Вкладки пользователей */
-    .nav-tabs {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 24px;
-      background: var(--card-bg);
-      padding: 6px;
-      border-radius: 12px;
-      border: 1px solid var(--card-border);
-    }
-
-    .tab-btn {
-      flex: 1;
-      background: transparent;
-      border: none;
-      color: var(--text-muted);
-      padding: 10px;
-      font-weight: 600;
-      border-radius: 8px;
-      cursor: pointer;
-      text-align: center;
-      transition: all 0.2s;
-    }
-
-    .tab-btn.active {
-      background: var(--primary);
-      color: white;
-    }
-
-    /* Сводные карточки */
-    .summary-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 16px;
-      margin-bottom: 24px;
-    }
-
-    .card {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 14px;
-      padding: 18px;
-    }
-
-    .card-title {
-      color: var(--text-muted);
-      font-size: 0.85rem;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-bottom: 8px;
-    }
-
-    .card-value {
-      font-size: 1.6rem;
-      font-weight: 700;
-    }
+    .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 14px; padding: 18px; }
+    .card-title { color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+    .card-value { font-size: 1.6rem; font-weight: 700; }
 
     .val-income { color: var(--success); }
     .val-expense { color: var(--danger); }
     .val-balance { color: var(--primary); }
     .val-savings { color: var(--warning); }
 
-    /* Графики и основной блок */
-    .main-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 20px;
-      margin-bottom: 24px;
-    }
+    .main-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }
+    @media (max-width: 900px) { .main-grid { grid-template-columns: 1fr; } }
 
-    @media (max-width: 900px) {
-      .main-grid { grid-template-columns: 1fr; }
-    }
+    .chart-container { position: relative; height: 260px; margin-top: 10px; }
 
-    .chart-container {
-      position: relative;
-      height: 260px;
-      margin-top: 10px;
-    }
+    .form-group { margin-bottom: 14px; }
+    .form-group label { display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 6px; }
+    .form-control { width: 100%; background: var(--bg-color); border: 1px solid var(--card-border); color: var(--text-main); padding: 10px 12px; border-radius: 8px; font-size: 0.95rem; }
+    .form-control:focus { outline: none; border-color: var(--primary); }
+    .flex-row { display: flex; gap: 10px; }
+    .checkbox-label { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; color: var(--text-main); cursor: pointer; }
 
-    /* Форма добавления транзакции */
-    .form-group {
-      margin-bottom: 14px;
-    }
+    .tx-list { display: flex; flex-direction: column; gap: 10px; max-height: 520px; overflow-y: auto; }
+    .tx-item { display: flex; align-items: center; justify-content: space-between; background: var(--bg-color); border: 1px solid var(--card-border); padding: 12px 16px; border-radius: 10px; }
+    .tx-left { display: flex; align-items: center; gap: 12px; }
+    .tx-icon { font-size: 1.4rem; background: var(--card-bg); padding: 8px; border-radius: 8px; }
+    .tx-details { display: flex; flex-direction: column; }
+    .tx-title { font-weight: 600; font-size: 0.95rem; }
+    .tx-meta { font-size: 0.78rem; color: var(--text-muted); display: flex; gap: 8px; align-items: center; margin-top: 3px; }
 
-    .form-group label {
-      display: block;
-      font-size: 0.85rem;
-      color: var(--text-muted);
-      margin-bottom: 6px;
-    }
-
-    .form-control {
-      width: 100%;
-      background: var(--bg-color);
-      border: 1px solid var(--card-border);
-      color: var(--text-main);
-      padding: 10px 12px;
-      border-radius: 8px;
-      font-size: 0.95rem;
-    }
-
-    .form-control:focus {
-      outline: none;
-      border-color: var(--primary);
-    }
-
-    .flex-row {
-      display: flex;
-      gap: 10px;
-    }
-
-    .checkbox-label {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 0.9rem;
-      color: var(--text-main);
-      cursor: pointer;
-      user-select: none;
-    }
-
-    /* Таблица / Список транзакций */
-    .tx-list {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      max-height: 500px;
-      overflow-y: auto;
-    }
-
-    .tx-item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      background: var(--bg-color);
-      border: 1px solid var(--card-border);
-      padding: 12px 16px;
-      border-radius: 10px;
-    }
-
-    .tx-left {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .tx-icon {
-      font-size: 1.4rem;
-      background: var(--card-bg);
-      padding: 8px;
-      border-radius: 8px;
-    }
-
-    .tx-details {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .tx-title {
-      font-weight: 600;
-      font-size: 0.95rem;
-    }
-
-    .tx-meta {
-      font-size: 0.78rem;
-      color: var(--text-muted);
-      display: flex;
-      gap: 8px;
-      align-items: center;
-    }
-
-    .badge {
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-size: 0.7rem;
-      font-weight: 600;
-    }
-
+    .badge { padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 600; }
     .badge-p1 { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
     .badge-p2 { background: rgba(236, 72, 153, 0.2); color: #f472b6; }
     .badge-recurring { background: rgba(139, 92, 246, 0.2); color: #c084fc; }
 
-    .tx-amount {
-      font-weight: 700;
-      font-size: 1.05rem;
-    }
+    .tx-amount { font-weight: 700; font-size: 1.05rem; }
+    .tx-actions { display: flex; align-items: center; gap: 6px; margin-left: 10px; }
+    .btn-icon { background: transparent; border: none; color: var(--text-muted); cursor: pointer; padding: 4px 6px; border-radius: 4px; font-size: 0.9rem; }
+    .btn-icon:hover { color: var(--text-main); background: var(--card-border); }
 
-    .tx-delete {
-      background: transparent;
-      border: none;
-      color: var(--text-muted);
-      cursor: pointer;
-      padding: 4px;
-      margin-left: 10px;
-    }
-
-    .tx-delete:hover {
-      color: var(--danger);
-    }
-
-    /* Модальное окно */
-    .modal-overlay {
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.7);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 100;
-      padding: 16px;
-    }
-
-    .modal {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 14px;
-      padding: 24px;
-      width: 100%;
-      max-width: 480px;
-    }
-
-    .modal-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 16px;
-    }
-
-    .modal-close {
-      background: transparent;
-      border: none;
-      color: var(--text-muted);
-      font-size: 1.2rem;
-      cursor: pointer;
-    }
+    .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.75); display: none; align-items: center; justify-content: center; z-index: 100; padding: 16px; }
+    .modal { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 14px; padding: 24px; width: 100%; max-width: 480px; }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .modal-close { background: transparent; border: none; color: var(--text-muted); font-size: 1.2rem; cursor: pointer; }
   </style>
 </head>
 <body>
 
-  <!-- Шапка -->
   <header>
     <div class="brand">
       <span style="font-size: 2rem;">🇸🇪</span>
       <div>
         <h1>FamiljBudget</h1>
-        <p style="font-size: 0.8rem; color: var(--text-muted);">Семейный бюджет Швеция (SEK)</p>
+        <p style="font-size: 0.8rem; color: var(--text-muted);">Семейный Бюджет Швеция (SEK)</p>
       </div>
     </div>
 
-    <!-- Выбор месяца -->
     <div class="month-picker">
       <button class="month-btn" onclick="changeMonth(-1)">←</button>
       <div class="month-display" id="currentMonthLabel">Сентябрь 2026</div>
       <button class="month-btn" onclick="changeMonth(1)">→</button>
     </div>
 
-    <!-- Кнопки управления -->
     <div class="header-actions">
+      <div class="sync-status" id="syncStatusBadge">
+        <span id="syncDot">⚪</span> <span id="syncText">Локальный режим</span>
+      </div>
+      <button class="btn btn-success" onclick="openModal('syncModal')">
+        🔑 Код семьи
+      </button>
       <button class="btn btn-purple" onclick="copyRecurringPayments()">
-        <span>📋</span> Перенести регулярные
+        📋 Перенести регулярные
       </button>
       <button class="btn" onclick="openModal('settingsModal')">
-        <span>⚙️</span> Настройки
-      </button>
-      <button class="btn" onclick="openModal('backupModal')">
-        <span>💾</span> Бэкап
+        ⚙️ Настройки
       </button>
     </div>
   </header>
 
-  <!-- Вкладки членов семьи -->
   <div class="nav-tabs">
     <button class="tab-btn active" onclick="switchTab('all')" id="tabAll">🏠 Общий семейный бюджет</button>
     <button class="tab-btn" onclick="switchTab('p1')" id="tabP1">👤 Партнер 1</button>
     <button class="tab-btn" onclick="switchTab('p2')" id="tabP2">👤 Партнер 2</button>
   </div>
 
-  <!-- Сводка бюджетов -->
   <div class="summary-grid">
     <div class="card">
       <div class="card-title">Доходы (Inkomster)</div>
@@ -433,7 +150,6 @@
     </div>
   </div>
 
-  <!-- Графики -->
   <div class="main-grid">
     <div class="card">
       <div class="card-title">Расходы по категориям</div>
@@ -449,9 +165,7 @@
     </div>
   </div>
 
-  <!-- Добавление транзакции и Список -->
   <div class="main-grid">
-    
     <!-- Форма добавления -->
     <div class="card">
       <div class="card-title" style="margin-bottom: 16px;">Добавить операцию</div>
@@ -471,9 +185,7 @@
           </div>
           <div style="flex: 2;">
             <label>Кто платит / получает</label>
-            <select class="form-control" id="txPartner">
-              <!-- Имена подгрузятся из JS -->
-            </select>
+            <select class="form-control" id="txPartner"></select>
           </div>
         </div>
 
@@ -492,7 +204,7 @@
           </div>
           <div style="flex: 1.5;">
             <label>Описание (опционально)</label>
-            <input type="text" class="form-control" id="txNote" placeholder="например, ICA Maxi / Willys">
+            <input type="text" class="form-control" id="txNote" placeholder="например, ICA Maxi / Hyra">
           </div>
         </div>
 
@@ -511,15 +223,96 @@
 
     <!-- Список транзакций -->
     <div class="card">
-      <div class="card-title" style="margin-bottom: 16px;">История операций за месяц</div>
-      <div class="tx-list" id="txListContainer">
-        <!-- Подгружается динамически -->
+      <div class="card-title" style="margin-bottom: 16px; display:flex; justify-content:space-between; align-items:center;">
+        <span>История операций за месяц</span>
+        <button class="btn" style="padding: 4px 8px; font-size: 0.8rem;" onclick="pullFromCloud()">🔄 Обновить</button>
       </div>
+      <div class="tx-list" id="txListContainer"></div>
     </div>
-
   </div>
 
-  <!-- Модальное окно: Новая категория -->
+  <!-- МОДАЛЬНОЕ ОКНО: Синхронизация (Код семьи) -->
+  <div class="modal-overlay" id="syncModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Подключение Облачной Синхронизации</h3>
+        <button class="modal-close" onclick="closeModal('syncModal')">✕</button>
+      </div>
+      <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 14px; line-height: 1.4;">
+        Введите уникальный **Код семьи** (например, <code>umea-familj-2026</code>). Введите точно такой же код на телефоне или компьютере вашей супруги. Все данные будут мгновенно объединяться и синхронизироваться!
+      </p>
+      <form onsubmit="handleSaveFamilyCode(event)">
+        <div class="form-group">
+          <label>Код Семьи (Family Room Code)</label>
+          <input type="text" id="familyCodeInput" class="form-control" placeholder="например, umea-familj-2026" required>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; margin-top: 10px;">
+          Сохранить и Синхронизировать
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- МОДАЛЬНОЕ ОКНО: Редактирование транзакции -->
+  <div class="modal-overlay" id="editTxModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>✏️ Редактировать операцию</h3>
+        <button class="modal-close" onclick="closeModal('editTxModal')">✕</button>
+      </div>
+      <form onsubmit="handleSaveEditTx(event)">
+        <input type="hidden" id="editTxId">
+        <div class="form-group flex-row">
+          <div style="flex: 1;">
+            <label>Тип</label>
+            <select class="form-control" id="editTxType" onchange="updateEditCategoryDropdown()">
+              <option value="expense">Расход</option>
+              <option value="income">Доход</option>
+            </select>
+          </div>
+          <div style="flex: 1.5;">
+            <label>Сумма (SEK)</label>
+            <input type="number" class="form-control" id="editTxAmount" step="any" required>
+          </div>
+        </div>
+
+        <div class="form-group flex-row">
+          <div style="flex: 1;">
+            <label>Кто платит / получает</label>
+            <select class="form-control" id="editTxPartner"></select>
+          </div>
+          <div style="flex: 1;">
+            <label>Категория</label>
+            <select class="form-control" id="editTxCategory" required></select>
+          </div>
+        </div>
+
+        <div class="form-group flex-row">
+          <div style="flex: 1;">
+            <label>Дата</label>
+            <input type="date" class="form-control" id="editTxDate" required>
+          </div>
+          <div style="flex: 1.5;">
+            <label>Описание</label>
+            <input type="text" class="form-control" id="editTxNote">
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-top: 10px;">
+          <label class="checkbox-label">
+            <input type="checkbox" id="editTxRecurring">
+            <span>🔄 Постоянный платеж</span>
+          </label>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; margin-top: 10px;">
+          Сохранить изменения
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- МОДАЛЬНОЕ ОКНО: Новая категория -->
   <div class="modal-overlay" id="newCatModal">
     <div class="modal">
       <div class="modal-header">
@@ -551,7 +344,7 @@
     </div>
   </div>
 
-  <!-- Модальное окно: Настройки -->
+  <!-- МОДАЛЬНОЕ ОКНО: Настройки -->
   <div class="modal-overlay" id="settingsModal">
     <div class="modal">
       <div class="modal-header">
@@ -574,40 +367,16 @@
     </div>
   </div>
 
-  <!-- Модальное окно: Бэкап -->
-  <div class="modal-overlay" id="backupModal">
-    <div class="modal">
-      <div class="modal-header">
-        <h3>Резервное копирование (JSON)</h3>
-        <button class="modal-close" onclick="closeModal('backupModal')">✕</button>
-      </div>
-      <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 16px;">
-        Вы можете сохранить файл со всеми вашими данными на компьютер или загрузить файл с другого устройства.
-      </p>
-      <div style="display: flex; gap: 10px; flex-direction: column;">
-        <button class="btn btn-primary" onclick="exportData()" style="justify-content: center;">
-          📥 Скачать файл данных (Export JSON)
-        </button>
-        <label class="btn" style="justify-content: center; cursor: pointer;">
-          📤 Загрузить файл данных (Import JSON)
-          <input type="file" accept=".json" onchange="importData(event)" style="display: none;">
-        </label>
-      </div>
-    </div>
-  </div>
-
   <script>
-    // Инициализация состояния
-    const STORAGE_KEY = 'familj_budget_se_v3';
-    
+    const STORAGE_KEY = 'familj_budget_se_v4';
+    const FIREBASE_BASE_URL = 'https://familjbudget-app-default-rtdb.europe-west1.firebasedatabase.app/rooms';
+
     let state = {
+      familyCode: '',
       activeTab: 'all',
       currentYear: 2026,
-      currentMonth: 8, // 0 = Январь, 8 = Сентябрь
-      settings: {
-        partner1: 'Антон',
-        partner2: 'Мария'
-      },
+      currentMonth: 8,
+      settings: { partner1: 'Антон', partner2: 'Мария' },
       categories: [
         { id: 'cat_boende', name: 'Boende (Жилье/Hyra)', type: 'expense', icon: '🏠' },
         { id: 'cat_mat', name: 'Mat (ICA/Willys/Coop)', type: 'expense', icon: '🛒' },
@@ -626,56 +395,121 @@
 
     let catChartInstance = null;
     let partnerChartInstance = null;
+    let syncInterval = null;
 
-    // Месяцы на русском
     const monthNames = [
       'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 
       'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
     ];
 
-    // Загрузка сохраненных данных
     function loadState() {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
-        try {
-          state = JSON.parse(saved);
-        } catch(e) {
-          console.error("Ошибка чтения данных:", e);
-        }
+        try { state = JSON.parse(saved); } catch(e){}
       } else {
-        // Тестовые данные при первом запуске
         state.transactions = [
           { id: '1', date: '2026-09-01', amount: 12500, type: 'expense', categoryId: 'cat_boende', partner: 'p1', note: 'Avgift / Hyra', isRecurring: true },
           { id: '2', date: '2026-09-03', amount: 1450, type: 'expense', categoryId: 'cat_mat', partner: 'p2', note: 'ICA Maxi', isRecurring: false },
           { id: '3', date: '2026-09-25', amount: 32000, type: 'income', categoryId: 'cat_lon', partner: 'p1', note: 'Lön', isRecurring: true },
-          { id: '4', date: '2026-09-25', amount: 28000, type: 'income', categoryId: 'cat_lon', partner: 'p2', note: 'Lön', isRecurring: true },
-          { id: '5', date: '2026-09-20', amount: 1250, type: 'income', categoryId: 'cat_barnbidrag', partner: 'p2', note: 'Försäkringskassan', isRecurring: true }
+          { id: '4', date: '2026-09-25', amount: 28000, type: 'income', categoryId: 'cat_lon', partner: 'p2', note: 'Lön', isRecurring: true }
         ];
-        saveState();
+        saveStateLocal();
       }
     }
 
-    function saveState() {
+    function saveStateLocal() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
       renderApp();
     }
 
-    // Инициализация при старте
+    async function saveState() {
+      saveStateLocal();
+      if (state.familyCode) {
+        await pushToCloud();
+      }
+    }
+
+    // Облачные функции (Firebase REST API)
+    async function pushToCloud() {
+      if (!state.familyCode) return;
+      const roomKey = state.familyCode.toLowerCase().trim().replace(/[^a-z0-9_-]/g, '');
+      if (!roomKey) return;
+
+      try {
+        await fetch(`${FIREBASE_BASE_URL}/${roomKey}.json`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            transactions: state.transactions,
+            categories: state.categories,
+            settings: state.settings,
+            updatedAt: Date.now()
+          })
+        });
+        updateSyncBadge(true);
+      } catch(e) {
+        console.error('Ошибка сохранения в облако:', e);
+        updateSyncBadge(false);
+      }
+    }
+
+    async function pullFromCloud() {
+      if (!state.familyCode) return;
+      const roomKey = state.familyCode.toLowerCase().trim().replace(/[^a-z0-9_-]/g, '');
+      if (!roomKey) return;
+
+      try {
+        const res = await fetch(`${FIREBASE_BASE_URL}/${roomKey}.json`);
+        if (res.ok) {
+          const cloudData = await res.json();
+          if (cloudData) {
+            if (cloudData.transactions) state.transactions = cloudData.transactions;
+            if (cloudData.categories) state.categories = cloudData.categories;
+            if (cloudData.settings) state.settings = cloudData.settings;
+            saveStateLocal();
+            updateSyncBadge(true);
+          }
+        }
+      } catch(e) {
+        console.error('Ошибка чтения из облака:', e);
+        updateSyncBadge(false);
+      }
+    }
+
+    function updateSyncBadge(isOk) {
+      const dot = document.getElementById('syncDot');
+      const text = document.getElementById('syncText');
+      if (state.familyCode) {
+        dot.innerText = isOk ? '🟢' : '🟡';
+        text.innerText = `Облако: ${state.familyCode}`;
+      } else {
+        dot.innerText = '⚪';
+        text.innerText = 'Локальный режим';
+      }
+    }
+
+    function setupSyncInterval() {
+      if (syncInterval) clearInterval(syncInterval);
+      if (state.familyCode) {
+        pullFromCloud();
+        syncInterval = setInterval(pullFromCloud, 5000); // авто-проверка каждые 5 сек
+      } else {
+        updateSyncBadge(false);
+      }
+    }
+
     window.addEventListener('DOMContentLoaded', () => {
       loadState();
       document.getElementById('txDate').valueAsDate = new Date();
+      setupSyncInterval();
       renderApp();
     });
 
     function renderApp() {
-      // Обновление заголовков и имен
       document.getElementById('tabP1').innerText = `👤 ${state.settings.partner1}`;
       document.getElementById('tabP2').innerText = `👤 ${state.settings.partner2}`;
-
-      // Помесячный переключатель
       document.getElementById('currentMonthLabel').innerText = `${monthNames[state.currentMonth]} ${state.currentYear}`;
 
-      // Селектор партнера в форме
       const partnerSelect = document.getElementById('txPartner');
       partnerSelect.innerHTML = `
         <option value="p1">${state.settings.partner1}</option>
@@ -685,9 +519,9 @@
       updateCategoryDropdown();
       renderStatsAndCharts();
       renderTransactionsList();
+      updateSyncBadge(true);
     }
 
-    // Навигация по месяцам
     function changeMonth(delta) {
       state.currentMonth += delta;
       if (state.currentMonth < 0) {
@@ -700,7 +534,6 @@
       saveState();
     }
 
-    // Переключение вкладок
     function switchTab(tab) {
       state.activeTab = tab;
       document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
@@ -710,7 +543,6 @@
       renderApp();
     }
 
-    // Выпадающий список категорий
     function updateCategoryDropdown() {
       const type = document.getElementById('txType').value;
       const catSelect = document.getElementById('txCategory');
@@ -726,7 +558,6 @@
         });
     }
 
-    // Фильтрация транзакций текущего месяца и вкладки
     function getFilteredTransactions() {
       return state.transactions.filter(tx => {
         const d = new Date(tx.date);
@@ -736,15 +567,10 @@
       });
     }
 
-    // Расчет статистики и графиков
     function renderStatsAndCharts() {
       const list = getFilteredTransactions();
-
-      let income = 0;
-      let expenses = 0;
-
-      const catMap = {};
-      const partnerMap = { p1: 0, p2: 0 };
+      let income = 0, expenses = 0;
+      const catMap = {}, partnerMap = { p1: 0, p2: 0 };
 
       list.forEach(tx => {
         const amt = parseFloat(tx.amount) || 0;
@@ -766,9 +592,7 @@
       document.getElementById('statBalance').innerText = `${balance.toLocaleString('sv-SE')} kr`;
       document.getElementById('statSavings').innerText = `${savingsRate}%`;
 
-      // Построение круговой диаграммы категорий
-      const catLabels = [];
-      const catData = [];
+      const catLabels = [], catData = [];
       Object.keys(catMap).forEach(catId => {
         const catObj = state.categories.find(c => c.id === catId);
         catLabels.push(catObj ? `${catObj.icon} ${catObj.name}` : 'Прочее');
@@ -786,39 +610,26 @@
             backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#64748b']
           }]
         },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8' } } }
-        }
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8' } } } }
       });
 
-      // Построение столбчатой диаграммы партнеров
       if (partnerChartInstance) partnerChartInstance.destroy();
       const ctx2 = document.getElementById('partnerChart').getContext('2d');
       partnerChartInstance = new Chart(ctx2, {
         type: 'bar',
         data: {
           labels: [state.settings.partner1, state.settings.partner2],
-          datasets: [{
-            label: 'Расходы (kr)',
-            data: [partnerMap.p1, partnerMap.p2],
-            backgroundColor: ['#3b82f6', '#ec4899']
-          }]
+          datasets: [{ label: 'Расходы (kr)', data: [partnerMap.p1, partnerMap.p2], backgroundColor: ['#3b82f6', '#ec4899'] }]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          scales: {
-            y: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } },
-            x: { ticks: { color: '#94a3b8' }, grid: { display: false } }
-          },
+          scales: { y: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } }, x: { ticks: { color: '#94a3b8' }, grid: { display: false } } },
           plugins: { legend: { display: false } }
         }
       });
     }
 
-    // Отрисовка списка транзакций
     function renderTransactionsList() {
       const container = document.getElementById('txListContainer');
       const list = getFilteredTransactions().sort((a,b) => new Date(b.date) - new Date(a.date));
@@ -852,14 +663,16 @@
               <div class="tx-amount" style="color: ${amountColor};">
                 ${amountSign}${parseFloat(tx.amount).toLocaleString('sv-SE')} kr
               </div>
-              <button class="tx-delete" onclick="deleteTransaction('${tx.id}')">✕</button>
+              <div class="tx-actions">
+                <button class="btn-icon" title="Редактировать" onclick="openEditTxModal('${tx.id}')">✏️</button>
+                <button class="btn-icon" title="Удалить" onclick="deleteTransaction('${tx.id}')">✕</button>
+              </div>
             </div>
           </div>
         `;
       }).join('');
     }
 
-    // Обработка создания операции
     function handleFormSubmit(e) {
       e.preventDefault();
       const amount = parseFloat(document.getElementById('txAmount').value);
@@ -885,17 +698,75 @@
     }
 
     function deleteTransaction(id) {
-      state.transactions = state.transactions.filter(t => t.id !== id);
-      saveState();
+      if (confirm('Удалить эту операцию?')) {
+        state.transactions = state.transactions.filter(t => t.id !== id);
+        saveState();
+      }
     }
 
-    // Перенос регулярных платежей
-    function copyRecurringPayments() {
-      // Ищем уникальные постоянные платежи из прошлых записей
-      const recurringTxs = state.transactions.filter(t => t.isRecurring);
+    // РЕДАКТИРОВАНИЕ ОПЕРАЦИИ
+    function openEditTxModal(id) {
+      const tx = state.transactions.find(t => t.id === id);
+      if (!tx) return;
 
+      document.getElementById('editTxId').value = tx.id;
+      document.getElementById('editTxType').value = tx.type;
+      document.getElementById('editTxAmount').value = tx.amount;
+      document.getElementById('editTxDate').value = tx.date;
+      document.getElementById('editTxNote').value = tx.note || '';
+      document.getElementById('editTxRecurring').checked = !!tx.isRecurring;
+
+      const partnerSelect = document.getElementById('editTxPartner');
+      partnerSelect.innerHTML = `
+        <option value="p1" ${tx.partner === 'p1' ? 'selected' : ''}>${state.settings.partner1}</option>
+        <option value="p2" ${tx.partner === 'p2' ? 'selected' : ''}>${state.settings.partner2}</option>
+      `;
+
+      updateEditCategoryDropdown(tx.categoryId);
+      openModal('editTxModal');
+    }
+
+    function updateEditCategoryDropdown(selectedCatId) {
+      const type = document.getElementById('editTxType').value;
+      const catSelect = document.getElementById('editTxCategory');
+      catSelect.innerHTML = '';
+
+      state.categories
+        .filter(c => c.type === type)
+        .forEach(cat => {
+          const opt = document.createElement('option');
+          opt.value = cat.id;
+          opt.innerText = `${cat.icon} ${cat.name}`;
+          if (cat.id === selectedCatId) opt.selected = true;
+          catSelect.appendChild(opt);
+        });
+    }
+
+    function handleSaveEditTx(e) {
+      e.preventDefault();
+      const id = document.getElementById('editTxId').value;
+      const index = state.transactions.findIndex(t => t.id === id);
+      if (index === -1) return;
+
+      state.transactions[index] = {
+        id: id,
+        type: document.getElementById('editTxType').value,
+        amount: parseFloat(document.getElementById('editTxAmount').value),
+        partner: document.getElementById('editTxPartner').value,
+        categoryId: document.getElementById('editTxCategory').value,
+        date: document.getElementById('editTxDate').value,
+        note: document.getElementById('editTxNote').value,
+        isRecurring: document.getElementById('editTxRecurring').checked
+      };
+
+      saveState();
+      closeModal('editTxModal');
+    }
+
+    function copyRecurringPayments() {
+      const recurringTxs = state.transactions.filter(t => t.isRecurring);
       if (recurringTxs.length === 0) {
-        alert('У вас пока нет отмеченных постоянных платежей!');
+        alert('У вас нет отмеченных постоянных платежей!');
         return;
       }
 
@@ -903,10 +774,8 @@
       const targetMonthStr = `${state.currentYear}-${String(state.currentMonth + 1).padStart(2, '0')}`;
 
       recurringTxs.forEach(rec => {
-        // Проверяем, существует ли уже такая операция в текущем месяце
         const exists = state.transactions.some(t => {
-          const tMonth = t.date.substring(0, 7);
-          return tMonth === targetMonthStr && 
+          return t.date.substring(0, 7) === targetMonthStr && 
                  t.categoryId === rec.categoryId && 
                  t.amount === rec.amount && 
                  t.partner === rec.partner;
@@ -926,27 +795,18 @@
       alert(`Успешно перенесено постоянных платежей: ${copiedCount}`);
     }
 
-    // Создание кастомной категории
     function handleCreateCategory(e) {
       e.preventDefault();
       const name = document.getElementById('catName').value;
       const type = document.getElementById('catType').value;
       const icon = document.getElementById('catIcon').value || '🏷️';
 
-      const newCat = {
-        id: 'cat_' + Date.now(),
-        name: name,
-        type: type,
-        icon: icon
-      };
-
-      state.categories.push(newCat);
+      state.categories.push({ id: 'cat_' + Date.now(), name, type, icon });
       saveState();
       closeModal('newCatModal');
       document.getElementById('catName').value = '';
     }
 
-    // Настройки имен
     function handleSaveSettings(e) {
       e.preventDefault();
       state.settings.partner1 = document.getElementById('setP1').value;
@@ -955,46 +815,27 @@
       closeModal('settingsModal');
     }
 
-    // Управление модальными окнами
+    function handleSaveFamilyCode(e) {
+      e.preventDefault();
+      const code = document.getElementById('familyCodeInput').value.trim();
+      state.familyCode = code;
+      saveStateLocal();
+      closeModal('syncModal');
+      setupSyncInterval();
+    }
+
     function openModal(id) {
       if (id === 'settingsModal') {
         document.getElementById('setP1').value = state.settings.partner1;
         document.getElementById('setP2').value = state.settings.partner2;
+      } else if (id === 'syncModal') {
+        document.getElementById('familyCodeInput').value = state.familyCode || '';
       }
       document.getElementById(id).style.display = 'flex';
     }
 
     function closeModal(id) {
       document.getElementById(id).style.display = 'none';
-    }
-
-    // Экспорт / Импорт JSON
-    function exportData() {
-      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state, null, 2));
-      const downloadAnchor = document.createElement('a');
-      downloadAnchor.setAttribute("href", dataStr);
-      downloadAnchor.setAttribute("download", `FamiljBudget_Backup_${new Date().toISOString().slice(0,10)}.json`);
-      document.body.appendChild(downloadAnchor);
-      downloadAnchor.click();
-      downloadAnchor.remove();
-    }
-
-    function importData(e) {
-      const fileReader = new FileReader();
-      fileReader.onload = function(event) {
-        try {
-          const importedState = JSON.parse(event.target.result);
-          if (importedState.transactions && importedState.categories) {
-            state = importedState;
-            saveState();
-            closeModal('backupModal');
-            alert('Данные успешно импортированы!');
-          }
-        } catch(err) {
-          alert('Ошибка чтения файла!');
-        }
-      };
-      fileReader.readAsText(e.target.files[0]);
     }
   </script>
 </body>
