@@ -52,7 +52,7 @@
     <div id="app" class="max-w-7xl mx-auto p-3 sm:p-6 space-y-6">
 
         <!-- HEADER -->
-        <header class="flex flex-col md:flex-row md:items-center justify-between gap-4 glass-card p-4 sm:p-5 rounded-2xl shadow-2xl">
+        <header class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 glass-card p-4 sm:p-5 rounded-2xl shadow-2xl">
             <div class="flex items-center gap-3">
                 <div class="p-3 bg-gradient-to-tr from-cyan-500 to-blue-600 rounded-xl text-slate-950 font-bold shadow-lg shadow-cyan-500/20">
                     <i data-lucide="home" class="w-7 h-7"></i>
@@ -72,23 +72,37 @@
                 </div>
             </div>
 
-            <!-- Top Action Buttons -->
+            <!-- MONTH NAVIGATOR -->
+            <div class="flex items-center justify-center gap-2 bg-slate-900/90 p-1.5 rounded-xl border border-slate-800 shadow-inner">
+                <button onclick="prevMonth()" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-all active:scale-95">
+                    <i data-lucide="chevron-left" class="w-4 h-4"></i>
+                </button>
+                <div class="text-center px-3 min-w-[140px]">
+                    <span id="currentMonthLabel" class="text-xs font-black uppercase tracking-wider text-cyan-400 block">Сентябрь 2026</span>
+                    <span class="text-[10px] text-slate-400">Выбранный период</span>
+                </div>
+                <button onclick="nextMonth()" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-all active:scale-95">
+                    <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <!-- TOP ACTION BUTTONS -->
             <div class="flex flex-wrap items-center gap-2">
-                <button onclick="openRoomModal()" class="flex items-center gap-2 px-3 py-2 text-xs font-bold rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 active:scale-95 transition-all">
+                <button onclick="copyRecurringPaymentsToCurrentMonth()" class="flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-xl bg-purple-500/15 hover:bg-purple-500/25 text-purple-300 border border-purple-500/30 active:scale-95 transition-all">
+                    <i data-lucide="copy" class="w-4 h-4 text-purple-400"></i>
+                    <span>📋 Перенести регулярные</span>
+                </button>
+                <button onclick="openRoomModal()" class="flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 active:scale-95 transition-all">
                     <i data-lucide="wifi" class="w-4 h-4"></i>
                     <span>Код семьи: <strong id="headerRoomCodeDisplay" class="underline">demo-room</strong></span>
                 </button>
-                <button onclick="openSettingsModal()" class="flex items-center gap-2 px-3 py-2 text-xs font-semibold rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700/60 active:scale-95 transition-all">
-                    <i data-lucide="users" class="w-4 h-4 text-purple-400"></i>
-                    <span>Имена членов семьи</span>
+                <button onclick="openSettingsModal()" class="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700/60 active:scale-95 transition-all">
+                    <i data-lucide="settings" class="w-4 h-4 text-amber-400"></i>
+                    <span>Настройки</span>
                 </button>
-                <button onclick="openExportModal()" class="flex items-center gap-2 px-3 py-2 text-xs font-semibold rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700/60 active:scale-95 transition-all">
+                <button onclick="openExportModal()" class="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700/60 active:scale-95 transition-all">
                     <i data-lucide="download-cloud" class="w-4 h-4 text-emerald-400"></i>
-                    <span>Экспорт / Импорт</span>
-                </button>
-                <button onclick="openResetModal()" class="flex items-center gap-2 px-3 py-2 text-xs font-semibold rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700/60 active:scale-95 transition-all">
-                    <i data-lucide="rotate-ccw" class="w-4 h-4 text-amber-400"></i>
-                    <span>Демо-данные</span>
+                    <span>Бэкап</span>
                 </button>
             </div>
         </header>
@@ -150,11 +164,11 @@
                 <!-- Net Family Balance -->
                 <div class="glass-card p-5 rounded-2xl border-l-4 border-l-cyan-500 flex items-center justify-between">
                     <div>
-                        <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Остаток семьи</p>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Остаток за месяц</p>
                         <h3 id="family-stat-balance" class="text-2xl font-black text-slate-100 tracking-tight mt-1">0 kr</h3>
                         <p class="text-[11px] text-slate-400 mt-1 flex items-center gap-1">
                             <i data-lucide="scale" class="w-3.5 h-3.5 text-cyan-400"></i>
-                            <span>Чистый баланс месяца</span>
+                            <span>Чистый баланс периода</span>
                         </p>
                     </div>
                     <div class="p-3 bg-cyan-500/10 rounded-xl text-cyan-400">
@@ -245,7 +259,7 @@
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
                     <div class="flex items-center gap-2">
                         <i data-lucide="list" class="w-5 h-5 text-cyan-400"></i>
-                        <h2 class="font-bold text-slate-200">Общий список транзакций семьи</h2>
+                        <h2 class="font-bold text-slate-200">Общий список транзакций периода</h2>
                         <span id="family-count-badge" class="px-2 py-0.5 text-xs bg-slate-800 text-slate-400 rounded-full border border-slate-700">0</span>
                     </div>
 
@@ -268,11 +282,6 @@
                             class="px-3 py-1.5 bg-slate-900 border border-slate-700/80 rounded-xl text-xs text-slate-300 focus:outline-none focus:border-cyan-500">
                             <option value="all">Все категории</option>
                         </select>
-
-                        <select id="familyFilterMonth" onchange="renderAll()" 
-                            class="px-3 py-1.5 bg-slate-900 border border-slate-700/80 rounded-xl text-xs text-slate-300 focus:outline-none focus:border-cyan-500">
-                            <option value="all">За всё время</option>
-                        </select>
                     </div>
                 </div>
 
@@ -282,7 +291,7 @@
             </section>
         </div>
 
-        <!-- VIEW 2 & 3: PERSONAL PARTNER VIEWS (DYNAMICALLY TARGETED) -->
+        <!-- VIEW 2 & 3: PERSONAL PARTNER VIEWS -->
         <div id="view-personal" class="space-y-6 hidden">
             
             <!-- Personal Summary Banner -->
@@ -359,38 +368,46 @@
                         <!-- Description/Store -->
                         <div>
                             <label for="txTitle" class="block text-xs font-semibold text-slate-400 mb-1">Магазин / Назначение</label>
-                            <input type="text" id="txTitle" required placeholder="например: ICA Maxi, Willys, SL, Hyra" 
+                            <input type="text" id="txTitle" required placeholder="например: ICA Maxi, Willys, Hyra, SL" 
                                 class="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700/80 rounded-xl text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-cyan-500">
                         </div>
 
-                        <!-- Category & Date Grid with INLINE NEW CATEGORY TRIGGER -->
-                        <div class="space-y-3">
-                            <div>
-                                <div class="flex items-center justify-between mb-1">
-                                    <label for="txCategory" class="block text-xs font-semibold text-slate-400">Категория</label>
-                                    <button type="button" onclick="openNewCategoryModal()" class="text-[11px] font-bold text-cyan-400 hover:text-cyan-300 flex items-center gap-1 transition-colors">
-                                        <i data-lucide="folder-plus" class="w-3.5 h-3.5"></i>
-                                        <span>+ Новая категория</span>
-                                    </button>
-                                </div>
-                                <div class="flex gap-2">
-                                    <select id="txCategory" required onchange="handleCategorySelectChange(this.value)"
-                                        class="w-full px-3 py-2.5 bg-slate-900 border border-slate-700/80 rounded-xl text-xs text-slate-100 focus:outline-none focus:border-cyan-500">
-                                        <!-- Dynamic options populated by JS -->
-                                    </select>
-                                    <button type="button" onclick="openNewCategoryModal()" title="Добавить новую категорию" 
-                                        class="px-3 py-2.5 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 rounded-xl text-xs font-bold flex items-center gap-1 active:scale-95 transition-all flex-shrink-0">
-                                        <i data-lucide="plus" class="w-4 h-4"></i>
-                                        <span class="hidden sm:inline">Новая</span>
-                                    </button>
-                                </div>
+                        <!-- Category Selection with Inline "+ Новая" button -->
+                        <div>
+                            <div class="flex items-center justify-between mb-1">
+                                <label for="txCategory" class="block text-xs font-semibold text-slate-400">Категория</label>
+                                <button type="button" onclick="openNewCategoryModal()" class="text-[11px] font-bold text-cyan-400 hover:text-cyan-300 flex items-center gap-1 transition-colors">
+                                    <i data-lucide="folder-plus" class="w-3.5 h-3.5"></i>
+                                    <span>+ Новая категория</span>
+                                </button>
                             </div>
+                            <div class="flex gap-2">
+                                <select id="txCategory" required onchange="handleCategorySelectChange(this.value)"
+                                    class="w-full px-3 py-2.5 bg-slate-900 border border-slate-700/80 rounded-xl text-xs text-slate-100 focus:outline-none focus:border-cyan-500">
+                                    <!-- Dynamic options populated by JS -->
+                                </select>
+                                <button type="button" onclick="openNewCategoryModal()" title="Добавить новую категорию" 
+                                    class="px-3 py-2.5 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 rounded-xl text-xs font-bold flex items-center gap-1 active:scale-95 transition-all flex-shrink-0">
+                                    <i data-lucide="plus" class="w-4 h-4"></i>
+                                    <span class="hidden sm:inline">Новая</span>
+                                </button>
+                            </div>
+                        </div>
 
-                            <div>
-                                <label for="txDate" class="block text-xs font-semibold text-slate-400 mb-1">Дата</label>
-                                <input type="date" id="txDate" required 
-                                    class="w-full px-3 py-2 bg-slate-900 border border-slate-700/80 rounded-xl text-xs text-slate-100 focus:outline-none focus:border-cyan-500">
-                            </div>
+                        <!-- Date -->
+                        <div>
+                            <label for="txDate" class="block text-xs font-semibold text-slate-400 mb-1">Дата</label>
+                            <input type="date" id="txDate" required 
+                                class="w-full px-3 py-2 bg-slate-900 border border-slate-700/80 rounded-xl text-xs text-slate-100 focus:outline-none focus:border-cyan-500">
+                        </div>
+
+                        <!-- RECURRING PAYMENT CHECKBOX -->
+                        <div class="p-3 bg-slate-900/90 rounded-xl border border-slate-800 flex items-center gap-3 cursor-pointer">
+                            <input type="checkbox" id="txIsRecurring" class="w-4 h-4 accent-purple-500 rounded cursor-pointer">
+                            <label for="txIsRecurring" class="text-xs font-bold text-slate-200 cursor-pointer flex items-center gap-1.5 select-none">
+                                <i data-lucide="refresh-cw" class="w-3.5 h-3.5 text-purple-400"></i>
+                                <span>Постоянный платеж (каждый месяц)</span>
+                            </label>
                         </div>
 
                         <!-- Submit Buttons -->
@@ -516,33 +533,46 @@
         </div>
     </div>
 
-    <!-- Partner Names Settings Modal -->
+    <!-- Settings & Category Manager Modal -->
     <div id="settingsModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-        <div class="glass-card max-w-md w-full p-6 rounded-2xl space-y-4 border border-slate-700 shadow-2xl">
+        <div class="glass-card max-w-md w-full p-6 rounded-2xl space-y-5 border border-slate-700 shadow-2xl max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center pb-2 border-b border-slate-800">
                 <h3 class="font-bold text-lg text-slate-100 flex items-center gap-2">
-                    <i data-lucide="user-cog" class="w-5 h-5 text-purple-400"></i> Имена членов семьи
+                    <i data-lucide="settings" class="w-5 h-5 text-amber-400"></i> Настройки и категории
                 </h3>
                 <button onclick="closeSettingsModal()" class="text-slate-400 hover:text-slate-200">
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
             
+            <!-- Partner names -->
             <div class="space-y-3">
+                <h4 class="text-xs font-bold text-cyan-400 uppercase tracking-wider">Имена членов семьи</h4>
                 <div>
-                    <label for="input-p1-name" class="block text-xs font-semibold text-slate-400 mb-1">Имя Партнера 1 (Муж / Он)</label>
+                    <label for="input-p1-name" class="block text-xs font-semibold text-slate-400 mb-1">Имя Партнера 1</label>
                     <input type="text" id="input-p1-name" class="w-full px-3.5 py-2 bg-slate-900 border border-slate-700 rounded-xl text-sm text-slate-100 focus:outline-none focus:border-cyan-500">
                 </div>
                 <div>
-                    <label for="input-p2-name" class="block text-xs font-semibold text-slate-400 mb-1">Имя Партнера 2 (Жена / Она)</label>
+                    <label for="input-p2-name" class="block text-xs font-semibold text-slate-400 mb-1">Имя Партнера 2</label>
                     <input type="text" id="input-p2-name" class="w-full px-3.5 py-2 bg-slate-900 border border-slate-700 rounded-xl text-sm text-slate-100 focus:outline-none focus:border-cyan-500">
                 </div>
+                <button onclick="savePartnerNames()" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl border border-slate-700">
+                    Сохранить имена
+                </button>
             </div>
 
-            <div class="flex gap-2 pt-2">
-                <button onclick="savePartnerNames()" class="w-full py-2.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs rounded-xl shadow-lg transition-all">
-                    Сохранить изменения
-                </button>
+            <!-- Category Manager List -->
+            <div class="space-y-3 pt-3 border-t border-slate-800">
+                <div class="flex items-center justify-between">
+                    <h4 class="text-xs font-bold text-purple-400 uppercase tracking-wider">Управление категориями</h4>
+                    <button onclick="openNewCategoryModal(); closeSettingsModal();" class="text-[11px] font-bold text-cyan-400 hover:underline">
+                        + Добавить
+                    </button>
+                </div>
+
+                <div id="settingsCategoryList" class="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                    <!-- Dynamic categories list -->
+                </div>
             </div>
         </div>
     </div>
@@ -552,7 +582,7 @@
         <div class="glass-card max-w-md w-full p-6 rounded-2xl space-y-4 border border-slate-700 shadow-2xl">
             <div class="flex justify-between items-center pb-2 border-b border-slate-800">
                 <h3 class="font-bold text-lg text-slate-100 flex items-center gap-2">
-                    <i data-lucide="database" class="w-5 h-5 text-emerald-400"></i> Экспорт / Импорт
+                    <i data-lucide="database" class="w-5 h-5 text-emerald-400"></i> Резервное копирование
                 </h3>
                 <button onclick="closeExportModal()" class="text-slate-400 hover:text-slate-200">
                     <i data-lucide="x" class="w-5 h-5"></i>
@@ -604,7 +634,7 @@
         import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // APP CONSTANTS & FIREBASE INIT
+        // APP CONSTANTS & FIREBASE CONFIG
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'swedish-family-budget-app';
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
             apiKey: "demo-api-key",
@@ -638,25 +668,23 @@
 
         const EMOJI_OPTIONS = ['🛒', '🏠', '🚗', '⚡', '🛡️', '🧸', '☕', '📈', '🛍️', '💰', '👶', '💵', '🏋️', '✈️', '🐾', '🎮', '🎁', '🔧', '💊', '📚', '👗', '🚲', '🍕', '🍿'];
 
-        function getRecentDate(offsetDays) {
-            const d = new Date();
-            d.setDate(d.getDate() - offsetDays);
-            return d.toISOString().split('T')[0];
-        }
+        // Get current year and month for initial state
+        const now = new Date();
+        const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
         const DEMO_TRANSACTIONS = [
-            { id: 'tx_1', user: 'p1', title: 'Зарплата (Lön efter skatt)', amount: 36000, type: 'income', category: 'salary', date: getRecentDate(1) },
-            { id: 'tx_2', user: 'p1', title: 'Аренда квартиры (Hyra)', amount: 12500, type: 'expense', category: 'housing', date: getRecentDate(2) },
-            { id: 'tx_3', user: 'p1', title: 'Покупки в ICA Maxi', amount: 2450, type: 'expense', category: 'products', date: getRecentDate(3) },
-            { id: 'tx_4', user: 'p1', title: 'Электричество (Vattenfall)', amount: 1100, type: 'expense', category: 'utility', date: getRecentDate(4) },
-            { id: 'tx_5', user: 'p1', title: 'Пополнение ISK (Avanza)', amount: 4000, type: 'expense', category: 'savings', date: getRecentDate(5) },
-            { id: 'tx_6', user: 'p1', title: 'Fika в Espresso House', amount: 320, type: 'expense', category: 'fika', date: getRecentDate(6) },
-            { id: 'tx_7', user: 'p2', title: 'Зарплата (Lön efter skatt)', amount: 33000, type: 'income', category: 'salary', date: getRecentDate(1) },
-            { id: 'tx_8', user: 'p2', title: 'Детские пособия (Barnbidrag)', amount: 1250, type: 'income', category: 'barnbidrag', date: getRecentDate(1) },
-            { id: 'tx_9', user: 'p2', title: 'Продукты в Willys', amount: 1850, type: 'expense', category: 'products', date: getRecentDate(3) },
-            { id: 'tx_10', user: 'p2', title: 'Оплата Förskola', amount: 1600, type: 'expense', category: 'kids', date: getRecentDate(5) },
-            { id: 'tx_11', user: 'p2', title: 'Страховка Folksam', amount: 750, type: 'expense', category: 'insurance', date: getRecentDate(7) },
-            { id: 'tx_12', user: 'p2', title: 'Проездной SL Månadsbiljett', amount: 1020, type: 'expense', category: 'transport', date: getRecentDate(8) }
+            { id: 'tx_1', user: 'p1', title: 'Зарплата (Lön efter skatt)', amount: 36000, type: 'income', category: 'salary', date: `${currentMonthStr}-25`, isRecurring: true },
+            { id: 'tx_2', user: 'p1', title: 'Аренда квартиры (Hyra/Avgift)', amount: 12500, type: 'expense', category: 'housing', date: `${currentMonthStr}-28`, isRecurring: true },
+            { id: 'tx_3', user: 'p1', title: 'Покупки в ICA Maxi', amount: 2450, type: 'expense', category: 'products', date: `${currentMonthStr}-03`, isRecurring: false },
+            { id: 'tx_4', user: 'p1', title: 'Электричество (Vattenfall)', amount: 1100, type: 'expense', category: 'utility', date: `${currentMonthStr}-15`, isRecurring: true },
+            { id: 'tx_5', user: 'p1', title: 'Пополнение ISK (Avanza)', amount: 4000, type: 'expense', category: 'savings', date: `${currentMonthStr}-26`, isRecurring: true },
+            { id: 'tx_6', user: 'p1', title: 'Fika в Espresso House', amount: 320, type: 'expense', category: 'fika', date: `${currentMonthStr}-10`, isRecurring: false },
+            { id: 'tx_7', user: 'p2', title: 'Зарплата (Lön efter skatt)', amount: 33000, type: 'income', category: 'salary', date: `${currentMonthStr}-25`, isRecurring: true },
+            { id: 'tx_8', user: 'p2', title: 'Детские пособия (Barnbidrag)', amount: 1250, type: 'income', category: 'barnbidrag', date: `${currentMonthStr}-20`, isRecurring: true },
+            { id: 'tx_9', user: 'p2', title: 'Продукты в Willys', amount: 1850, type: 'expense', category: 'products', date: `${currentMonthStr}-08`, isRecurring: false },
+            { id: 'tx_10', user: 'p2', title: 'Оплата Förskola', amount: 1600, type: 'expense', category: 'kids', date: `${currentMonthStr}-12`, isRecurring: true },
+            { id: 'tx_11', user: 'p2', title: 'Страховка Folksam', amount: 750, type: 'expense', category: 'insurance', date: `${currentMonthStr}-18`, isRecurring: true },
+            { id: 'tx_12', user: 'p2', title: 'Проездной SL Månadsbiljett', amount: 1020, type: 'expense', category: 'transport', date: `${currentMonthStr}-01`, isRecurring: true }
         ];
 
         // GLOBAL APP STATE
@@ -665,6 +693,7 @@
             settings: { p1Name: 'Антон', p2Name: 'Мария' },
             categories: { ...DEFAULT_CATEGORIES },
             transactions: [...DEMO_TRANSACTIONS],
+            selectedMonth: currentMonthStr,
             currentTab: 'family',
             currentFormType: 'expense',
             selectedEmoji: '🛍️',
@@ -678,7 +707,6 @@
         let familyChartInstance = null;
         let partnerComparisonChartInstance = null;
 
-        // FIREBASE AUTH & REALTIME SYNC
         async function initFirebase() {
             try {
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
@@ -703,7 +731,7 @@
             const roomCode = window.AppState.roomCode.toLowerCase().trim();
             document.getElementById('headerRoomCodeDisplay').textContent = roomCode;
 
-            // RULE 1 Strict Path: /artifacts/{appId}/public/data/{collectionName}/{docId}
+            // RULE 1 Path: /artifacts/{appId}/public/data/family_rooms/{roomCode}
             const roomDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'family_rooms', roomCode);
 
             window.AppState.unsubListener = onSnapshot(roomDocRef, (snapshot) => {
@@ -718,7 +746,6 @@
                     renderAll();
                     updateSyncBadge(true);
                 } else {
-                    // Document doesn't exist yet, push local state to create room
                     pushStateToFirestore();
                     updateSyncBadge(true);
                 }
@@ -759,7 +786,90 @@
             }
         }
 
-        // CATEGORY CREATION & DROPDOWN MANAGEMENT
+        window.prevMonth = function() {
+            const [y, m] = window.AppState.selectedMonth.split('-').map(Number);
+            const date = new Date(y, m - 2, 1);
+            window.AppState.selectedMonth = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+            renderAll();
+        };
+
+        window.nextMonth = function() {
+            const [y, m] = window.AppState.selectedMonth.split('-').map(Number);
+            const date = new Date(y, m, 1);
+            window.AppState.selectedMonth = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+            renderAll();
+        };
+
+        window.copyRecurringPaymentsToCurrentMonth = function() {
+            const targetMonth = window.AppState.selectedMonth;
+            
+            // Find all recurring transactions in the entire database
+            const recurringTemplates = window.AppState.transactions.filter(t => t.isRecurring);
+
+            if (recurringTemplates.length === 0) {
+                showToast('Нет отмеченных постоянных платежей. Поставьте галочку [x] Постоянный платеж в любой операции.', 'error');
+                return;
+            }
+
+            // Deduplicate templates by title, amount, category, type, user
+            const uniqueTemplates = [];
+            const seenKeys = new Set();
+
+            recurringTemplates.forEach(t => {
+                const key = `${t.user}_${t.title.toLowerCase()}_${t.amount}_${t.category}_${t.type}`;
+                if (!seenKeys.has(key)) {
+                    seenKeys.add(key);
+                    uniqueTemplates.push(t);
+                }
+            });
+
+            // Find existing transactions in target month
+            const targetMonthTx = window.AppState.transactions.filter(t => t.date && t.date.startsWith(targetMonth));
+
+            let addedCount = 0;
+
+            uniqueTemplates.forEach(tmpl => {
+                // Check if already exists in target month
+                const exists = targetMonthTx.some(t => 
+                    t.user === tmpl.user && 
+                    t.title.toLowerCase() === tmpl.title.toLowerCase() && 
+                    Number(t.amount) === Number(tmpl.amount) &&
+                    t.type === tmpl.type
+                );
+
+                if (!exists) {
+                    const dayPart = tmpl.date ? tmpl.date.split('-')[2] || '01' : '01';
+                    const newTx = {
+                        id: 'tx_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+                        user: tmpl.user,
+                        title: tmpl.title,
+                        amount: Number(tmpl.amount),
+                        type: tmpl.type,
+                        category: tmpl.category,
+                        date: `${targetMonth}-${dayPart}`,
+                        isRecurring: true
+                    };
+                    window.AppState.transactions.unshift(newTx);
+                    addedCount++;
+                }
+            });
+
+            if (addedCount > 0) {
+                saveAndSync();
+                renderAll();
+                showToast(`Скопировано ${addedCount} постоянных платежей в ${formatMonthName(targetMonth)}!`);
+            } else {
+                showToast(`Все постоянные платежи уже перенесены в ${formatMonthName(targetMonth)}.`, 'error');
+            }
+        };
+
+        function formatMonthName(monthStr) {
+            const [y, m] = monthStr.split('-').map(Number);
+            const dateObj = new Date(y, m - 1, 1);
+            const label = dateObj.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' });
+            return label.charAt(0).toUpperCase() + label.slice(1);
+        }
+
         window.openNewCategoryModal = function() {
             renderEmojiPicker();
             document.getElementById('newCategoryModal').classList.remove('hidden');
@@ -809,16 +919,14 @@
 
             window.AppState.categories[catKey] = newCat;
 
-            // Set form type to match new category
             setFormType(type);
             populateCategoryDropdowns();
-
-            // Select newly created category in the transaction form
             document.getElementById('txCategory').value = catKey;
 
             closeNewCategoryModal();
             saveAndSync();
-            showToast(`Категория "${name}" создана и выбрана!`);
+            renderSettingsCategoryList();
+            showToast(`Категория "${name}" создана!`);
         };
 
         function populateCategoryDropdowns() {
@@ -828,7 +936,6 @@
 
             const activeFormType = window.AppState.currentFormType;
 
-            // Populate form dropdown
             const options = Object.keys(cats)
                 .filter(k => cats[k].type === activeFormType)
                 .map(k => `<option value="${k}">${cats[k].emoji ? cats[k].emoji + ' ' : ''}${cats[k].name}</option>`);
@@ -836,14 +943,54 @@
             options.push(`<option value="__NEW__" class="font-bold text-cyan-400">+ Создать новую категорию...</option>`);
             txCat.innerHTML = options.join('');
 
-            // Populate filter dropdown
             famCat.innerHTML = `<option value="all">Все категории</option>` + 
                 Object.keys(cats)
                 .map(k => `<option value="${k}">${cats[k].emoji ? cats[k].emoji + ' ' : ''}${cats[k].name}</option>`)
                 .join('');
         }
 
-        // TRANSACTION FORM HANDLERS
+        window.deleteCategory = function(catKey) {
+            if (DEFAULT_CATEGORIES[catKey]) {
+                showToast('Базовую категорию нельзя удалить', 'error');
+                return;
+            }
+
+            delete window.AppState.categories[catKey];
+            saveAndSync();
+            populateCategoryDropdowns();
+            renderSettingsCategoryList();
+            renderAll();
+            showToast('Категория удалена');
+        };
+
+        function renderSettingsCategoryList() {
+            const container = document.getElementById('settingsCategoryList');
+            const cats = window.AppState.categories;
+
+            container.innerHTML = Object.keys(cats).map(k => {
+                const cat = cats[k];
+                const isDefault = !!DEFAULT_CATEGORIES[k];
+
+                return `
+                    <div class="flex items-center justify-between p-2 rounded-xl bg-slate-900 border border-slate-800 text-xs">
+                        <div class="flex items-center gap-2">
+                            <span>${cat.emoji || '🛍️'}</span>
+                            <span class="font-medium text-slate-200">${cat.name}</span>
+                            <span class="text-[9px] px-1.5 py-0.2 rounded ${cat.type === 'expense' ? 'bg-rose-500/10 text-rose-400' : 'bg-emerald-500/10 text-emerald-400'}">
+                                ${cat.type === 'expense' ? 'Расход' : 'Доход'}
+                            </span>
+                        </div>
+                        ${!isDefault ? `
+                            <button onclick="deleteCategory('${k}')" class="text-slate-500 hover:text-rose-400 p-1">
+                                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                            </button>
+                        ` : '<span class="text-[9px] text-slate-600">Базовая</span>'}
+                    </div>
+                `;
+            }).join('');
+            lucide.createIcons();
+        }
+
         window.setFormType = function(type) {
             window.AppState.currentFormType = type;
             const btnExp = document.getElementById('btn-type-expense');
@@ -867,6 +1014,7 @@
             const amount = parseFloat(document.getElementById('txAmount').value);
             const date = document.getElementById('txDate').value;
             const category = document.getElementById('txCategory').value;
+            const isRecurring = document.getElementById('txIsRecurring').checked;
 
             if (category === '__NEW__') {
                 openNewCategoryModal();
@@ -889,7 +1037,8 @@
                         amount,
                         type: window.AppState.currentFormType,
                         category,
-                        date
+                        date,
+                        isRecurring
                     };
                     showToast('Запись обновлена');
                 }
@@ -902,10 +1051,11 @@
                     amount,
                     type: window.AppState.currentFormType,
                     category,
-                    date
+                    date,
+                    isRecurring
                 };
                 window.AppState.transactions.unshift(newTx);
-                showToast('Операция успешно добавлена');
+                showToast('Операция добавлена');
             }
 
             saveAndSync();
@@ -916,7 +1066,8 @@
         function resetForm() {
             document.getElementById('txTitle').value = '';
             document.getElementById('txAmount').value = '';
-            document.getElementById('txDate').value = new Date().toISOString().split('T')[0];
+            document.getElementById('txDate').value = `${window.AppState.selectedMonth}-15`;
+            document.getElementById('txIsRecurring').checked = false;
         }
 
         window.startEdit = function(id) {
@@ -934,6 +1085,7 @@
             document.getElementById('txAmount').value = tx.amount;
             document.getElementById('txDate').value = tx.date;
             document.getElementById('txCategory').value = tx.category;
+            document.getElementById('txIsRecurring').checked = !!tx.isRecurring;
 
             document.getElementById('form-title').textContent = 'Редактировать операцию';
             document.getElementById('btn-submit-tx').querySelector('span').textContent = 'Обновить';
@@ -960,7 +1112,6 @@
             openConfirmModal('Удаление транзакции', 'Вы уверены, что хотите удалить эту операцию?');
         };
 
-        // RENDERING & CALCULATIONS
         function formatSEK(val) {
             return new Intl.NumberFormat('sv-SE', {
                 maximumFractionDigits: 0
@@ -1014,7 +1165,7 @@
         }
 
         window.renderAll = function() {
-            populateMonthDropdown();
+            document.getElementById('currentMonthLabel').textContent = formatMonthName(window.AppState.selectedMonth);
 
             if (window.AppState.currentTab === 'family') {
                 renderFamilyView();
@@ -1025,8 +1176,14 @@
             lucide.createIcons();
         };
 
+        function getMonthFilteredTransactions() {
+            const mStr = window.AppState.selectedMonth;
+            return window.AppState.transactions.filter(t => t.date && t.date.startsWith(mStr));
+        }
+
         function renderFamilyView() {
-            const filtered = getFilteredTransactions();
+            const monthTx = getMonthFilteredTransactions();
+            const filtered = applySearchAndFilters(monthTx);
 
             const totalIncome = filtered.filter(t => t.type === 'income').reduce((a, b) => a + Number(b.amount), 0);
             const totalExpense = filtered.filter(t => t.type === 'expense').reduce((a, b) => a + Number(b.amount), 0);
@@ -1058,7 +1215,8 @@
         }
 
         function renderPersonalView(userKey) {
-            const userTx = window.AppState.transactions.filter(t => t.user === userKey);
+            const monthTx = getMonthFilteredTransactions();
+            const userTx = monthTx.filter(t => t.user === userKey);
             
             const income = userTx.filter(t => t.type === 'income').reduce((a, b) => a + Number(b.amount), 0);
             const expense = userTx.filter(t => t.type === 'expense').reduce((a, b) => a + Number(b.amount), 0);
@@ -1087,7 +1245,7 @@
                         <div class="w-10 h-10 bg-slate-900 rounded-full flex items-center justify-center mx-auto text-slate-500">
                             <i data-lucide="inbox" class="w-5 h-5"></i>
                         </div>
-                        <p class="text-xs text-slate-400">Нет записей по выбранным критериям</p>
+                        <p class="text-xs text-slate-400">Нет операций за ${formatMonthName(window.AppState.selectedMonth)}</p>
                     </div>
                 `;
                 return;
@@ -1115,6 +1273,7 @@
                                 <div class="flex items-center gap-2">
                                     <h4 class="text-xs font-bold text-slate-200 truncate">${escapeHtml(tx.title)}</h4>
                                     ${showUserBadge ? `<span class="text-[9px] font-bold px-1.5 py-0.2 rounded border ${userBadgeColor}">${userName}</span>` : ''}
+                                    ${tx.isRecurring ? `<span class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-purple-500/10 text-purple-300 border border-purple-500/20 flex items-center gap-1"><i data-lucide="refresh-cw" class="w-2.5 h-2.5"></i> Постоянный</span>` : ''}
                                 </div>
                                 <div class="flex items-center gap-2 mt-0.5">
                                     <span class="text-[10px] text-slate-400">${dateFormatted}</span>
@@ -1257,38 +1416,18 @@
             });
         }
 
-        function getFilteredTransactions() {
+        function applySearchAndFilters(list) {
             const search = document.getElementById('familyFilterSearch').value.toLowerCase().trim();
             const user = document.getElementById('familyFilterUser').value;
             const category = document.getElementById('familyFilterCategory').value;
-            const month = document.getElementById('familyFilterMonth').value;
 
-            return window.AppState.transactions.filter(tx => {
+            return list.filter(tx => {
                 const matchesSearch = tx.title.toLowerCase().includes(search);
                 const matchesUser = user === 'all' || tx.user === user;
                 const matchesCategory = category === 'all' || tx.category === category;
-                const matchesMonth = month === 'all' || tx.date.substring(0, 7) === month;
 
-                return matchesSearch && matchesUser && matchesCategory && matchesMonth;
+                return matchesSearch && matchesUser && matchesCategory;
             }).sort((a, b) => new Date(b.date) - new Date(a.date));
-        }
-
-        function populateMonthDropdown() {
-            const monthSelect = document.getElementById('familyFilterMonth');
-            const current = monthSelect.value;
-
-            const months = new Set(window.AppState.transactions.map(t => t.date ? t.date.substring(0, 7) : ''));
-            const sorted = Array.from(months).filter(Boolean).sort().reverse();
-
-            monthSelect.innerHTML = `<option value="all">За всё время</option>` + 
-                sorted.map(m => {
-                    const [y, mon] = m.split('-');
-                    const dateObj = new Date(y, mon - 1);
-                    const label = dateObj.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' });
-                    return `<option value="${m}">${label.charAt(0).toUpperCase() + label.slice(1)}</option>`;
-                }).join('');
-
-            monthSelect.value = current;
         }
 
         function updatePartnerLabels() {
@@ -1310,7 +1449,6 @@
             pushStateToFirestore();
         }
 
-        // MODALS CONTROL
         window.openRoomModal = function() {
             document.getElementById('inputRoomCode').value = window.AppState.roomCode;
             document.getElementById('roomModal').classList.remove('hidden');
@@ -1332,6 +1470,7 @@
         };
 
         window.openSettingsModal = function() {
+            renderSettingsCategoryList();
             document.getElementById('settingsModal').classList.remove('hidden');
         };
 
@@ -1391,7 +1530,7 @@
                         populateCategoryDropdowns();
                         renderAll();
                         closeExportModal();
-                        showToast('Бэкап успешно импортирован');
+                        showToast('Бэкап импортирован');
                     } else {
                         showToast('Неверный формат файла', 'error');
                     }
@@ -1416,18 +1555,6 @@
         window.executeConfirmAction = function() {
             if (window.AppState.pendingAction) window.AppState.pendingAction();
             closeConfirmModal();
-        };
-
-        window.openResetModal = function() {
-            window.AppState.pendingAction = () => {
-                window.AppState.transactions = [...DEMO_TRANSACTIONS];
-                window.AppState.categories = { ...DEFAULT_CATEGORIES };
-                saveAndSync();
-                populateCategoryDropdowns();
-                renderAll();
-                showToast('Загружены демо-данные');
-            };
-            openConfirmModal('Загрузка демо-данных', 'Все текущие данные будут заменены демо-набором в шведских кронах.');
         };
 
         function escapeHtml(str) {
@@ -1463,7 +1590,6 @@
 
         // INITIALIZATION ON LOAD
         window.onload = function() {
-            // Load local backup first
             const savedTx = localStorage.getItem('se_family_budget_tx');
             const savedSet = localStorage.getItem('se_family_budget_settings');
             const savedCat = localStorage.getItem('se_family_budget_categories');
@@ -1472,7 +1598,7 @@
             if (savedSet) try { window.AppState.settings = JSON.parse(savedSet); } catch(e){}
             if (savedCat) try { window.AppState.categories = JSON.parse(savedCat); } catch(e){}
 
-            document.getElementById('txDate').value = new Date().toISOString().split('T')[0];
+            document.getElementById('txDate').value = `${window.AppState.selectedMonth}-15`;
             updatePartnerLabels();
             populateCategoryDropdowns();
             renderAll();
