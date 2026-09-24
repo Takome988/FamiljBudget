@@ -1,1467 +1,1001 @@
 <!DOCTYPE html>
-<html lang="ru" class="dark">
+<html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Семейный Бюджет Швеция | Familj Budget (SEK / kr)</title>
-    
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        slate: {
-                            850: '#131b2e',
-                            950: '#090d16',
-                        }
-                    }
-                }
-            }
-        }
-    </script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FamiljBudget 🇸🇪 - Семейный Бюджет</title>
+  <!-- Chart.js для визуализации графиков -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --bg-color: #0f172a;
+      --card-bg: #1e293b;
+      --card-border: #334155;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --success: #10b981;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --purple: #8b5cf6;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+    }
 
-    <!-- FontAwesome CDN -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Chart.js CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
 
-    <style>
-        ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #090d16;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #1e293b;
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #334155;
-        }
-        .glass-card {
-            background: rgba(26, 36, 56, 0.85);
-            backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-        }
-        .glass-card-hover:hover {
-            border-color: rgba(6, 182, 212, 0.3);
-            box-shadow: 0 8px 24px -4px rgba(6, 182, 212, 0.1);
-        }
-        @keyframes pulse-subtle {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-        .animate-pulse-subtle {
-            animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-        }
-    </style>
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      padding: 16px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    /* Шапка сайта */
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--card-border);
+      margin-bottom: 20px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      background: linear-gradient(to right, #3b82f6, #60a5fa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    /* Навигация по месяцам */
+    .month-picker {
+      display: flex;
+      align-items: center;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 4px;
+    }
+
+    .month-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-main);
+      padding: 8px 12px;
+      cursor: pointer;
+      font-size: 1.1rem;
+      border-radius: 8px;
+    }
+
+    .month-btn:hover {
+      background: var(--card-border);
+    }
+
+    .month-display {
+      font-weight: 600;
+      padding: 0 16px;
+      min-width: 140px;
+      text-align: center;
+    }
+
+    /* Панель управления шапки */
+    .header-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      color: var(--text-main);
+      padding: 8px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .btn:hover {
+      background: var(--card-border);
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      border-color: var(--primary);
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-hover);
+    }
+
+    .btn-purple {
+      background: var(--purple);
+      border-color: var(--purple);
+    }
+
+    .btn-purple:hover {
+      opacity: 0.9;
+    }
+
+    /* Вкладки пользователей */
+    .nav-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 24px;
+      background: var(--card-bg);
+      padding: 6px;
+      border-radius: 12px;
+      border: 1px solid var(--card-border);
+    }
+
+    .tab-btn {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 10px;
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s;
+    }
+
+    .tab-btn.active {
+      background: var(--primary);
+      color: white;
+    }
+
+    /* Сводные карточки */
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 18px;
+    }
+
+    .card-title {
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+
+    .card-value {
+      font-size: 1.6rem;
+      font-weight: 700;
+    }
+
+    .val-income { color: var(--success); }
+    .val-expense { color: var(--danger); }
+    .val-balance { color: var(--primary); }
+    .val-savings { color: var(--warning); }
+
+    /* Графики и основной блок */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+
+    @media (max-width: 900px) {
+      .main-grid { grid-template-columns: 1fr; }
+    }
+
+    .chart-container {
+      position: relative;
+      height: 260px;
+      margin-top: 10px;
+    }
+
+    /* Форма добавления транзакции */
+    .form-group {
+      margin-bottom: 14px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .form-control {
+      width: 100%;
+      background: var(--bg-color);
+      border: 1px solid var(--card-border);
+      color: var(--text-main);
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 0.95rem;
+    }
+
+    .form-control:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    .flex-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.9rem;
+      color: var(--text-main);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    /* Таблица / Список транзакций */
+    .tx-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-height: 500px;
+      overflow-y: auto;
+    }
+
+    .tx-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg-color);
+      border: 1px solid var(--card-border);
+      padding: 12px 16px;
+      border-radius: 10px;
+    }
+
+    .tx-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .tx-icon {
+      font-size: 1.4rem;
+      background: var(--card-bg);
+      padding: 8px;
+      border-radius: 8px;
+    }
+
+    .tx-details {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .tx-title {
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    .tx-meta {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .badge {
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-weight: 600;
+    }
+
+    .badge-p1 { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+    .badge-p2 { background: rgba(236, 72, 153, 0.2); color: #f472b6; }
+    .badge-recurring { background: rgba(139, 92, 246, 0.2); color: #c084fc; }
+
+    .tx-amount {
+      font-weight: 700;
+      font-size: 1.05rem;
+    }
+
+    .tx-delete {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 4px;
+      margin-left: 10px;
+    }
+
+    .tx-delete:hover {
+      color: var(--danger);
+    }
+
+    /* Модальное окно */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.7);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 16px;
+    }
+
+    .modal {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 24px;
+      width: 100%;
+      max-width: 480px;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .modal-close {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 1.2rem;
+      cursor: pointer;
+    }
+  </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased selection:bg-cyan-500 selection:text-slate-950 pb-12">
+<body>
 
-    <div id="app" class="max-w-7xl mx-auto p-3 sm:p-6 space-y-6">
-
-        <!-- HEADER SECTION -->
-        <header class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 glass-card p-4 sm:p-5 rounded-2xl shadow-2xl">
-            <div class="flex items-center gap-3">
-                <div class="p-3 bg-gradient-to-tr from-cyan-500 to-blue-600 rounded-xl text-slate-950 font-bold shadow-lg shadow-cyan-500/20">
-                    <i class="fa-solid fa-house-chimney text-xl"></i>
-                </div>
-                <div>
-                    <div class="flex items-center gap-2">
-                        <h1 class="text-xl sm:text-2xl font-black tracking-tight bg-gradient-to-r from-white via-slate-200 to-cyan-200 bg-clip-text text-transparent">
-                            Familj Budget <span class="text-cyan-400 font-semibold text-sm sm:text-base ml-1">(SEK / kr)</span>
-                        </h1>
-                    </div>
-                    <p class="text-xs text-slate-400 font-medium flex items-center gap-2 mt-0.5">
-                        <span>Семейный учет • Швеция 🇸🇪</span>
-                        <span id="syncStatusBadge" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> 🟢 Готово к работе
-                        </span>
-                    </p>
-                </div>
-            </div>
-
-            <!-- Month Switcher Controls -->
-            <div class="flex items-center justify-center gap-2 bg-slate-900/90 p-1.5 rounded-xl border border-slate-800 shadow-inner">
-                <button onclick="prevMonth()" title="Предыдущий месяц" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-all active:scale-95">
-                    <i class="fa-solid fa-chevron-left text-xs"></i>
-                </button>
-                <div class="text-center px-3 min-w-[150px]">
-                    <span id="currentMonthLabel" class="text-xs font-black uppercase tracking-wider text-cyan-400 block">Сентябрь 2026</span>
-                    <span class="text-[10px] text-slate-400">Выбранный период</span>
-                </div>
-                <button onclick="nextMonth()" title="Следующий месяц" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-all active:scale-95">
-                    <i class="fa-solid fa-chevron-right text-xs"></i>
-                </button>
-            </div>
-
-            <!-- Global Action Buttons -->
-            <div class="flex flex-wrap items-center gap-2">
-                <button onclick="pullFromCloud(true)" title="Синхронизировать с облаком" class="flex items-center gap-2 px-3 py-2 text-xs font-bold rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/30 active:scale-95 transition-all">
-                    <i class="fa-solid fa-rotate text-cyan-400" id="syncSpinnerIcon"></i>
-                    <span>Обновить из облака</span>
-                </button>
-                <button onclick="copyRecurringPaymentsToCurrentMonth()" class="flex items-center gap-2 px-3 py-2 text-xs font-bold rounded-xl bg-purple-500/15 hover:bg-purple-500/25 text-purple-300 border border-purple-500/30 active:scale-95 transition-all">
-                    <i class="fa-solid fa-copy text-purple-400"></i>
-                    <span>📋 Перенести регулярные</span>
-                </button>
-                <button onclick="openSettingsModal()" class="flex items-center gap-2 px-3 py-2 text-xs font-semibold rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 active:scale-95 transition-all">
-                    <i class="fa-solid fa-gear text-amber-400"></i>
-                    <span>Настройки</span>
-                </button>
-                <button onclick="openExportModal()" class="flex items-center gap-2 px-3 py-2 text-xs font-semibold rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 active:scale-95 transition-all">
-                    <i class="fa-solid fa-database text-emerald-400"></i>
-                    <span>Бэкап</span>
-                </button>
-            </div>
-        </header>
-
-        <nav class="flex p-1.5 bg-slate-900/90 rounded-2xl border border-slate-800 gap-1.5 shadow-inner overflow-x-auto">
-            <button id="tab-family" onclick="switchTab('family')" 
-                class="flex-1 min-w-[170px] py-3 px-4 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all duration-200 bg-cyan-500 text-slate-950 shadow-lg shadow-cyan-500/20">
-                <i class="fa-solid fa-chart-pie"></i>
-                <span>🏠 Общий бюджет</span>
-            </button>
-            <button id="tab-p1" onclick="switchTab('p1')" 
-                class="flex-1 min-w-[140px] py-3 px-4 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all duration-200 text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
-                <i class="fa-solid fa-user text-cyan-400"></i>
-                <span id="label-tab-p1">Антон</span>
-            </button>
-            <button id="tab-p2" onclick="switchTab('p2')" 
-                class="flex-1 min-w-[140px] py-3 px-4 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all duration-200 text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
-                <i class="fa-solid fa-user-gear text-purple-400"></i>
-                <span id="label-tab-p2">Мария</span>
-            </button>
-        </nav>
-
-        <div id="view-family" class="space-y-6">
-            
-            <!-- Summary Stat Cards -->
-            <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div class="glass-card p-5 rounded-2xl border-l-4 border-l-emerald-500 flex items-center justify-between">
-                    <div>
-                        <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Общий доход семьи</p>
-                        <h3 id="family-stat-income" class="text-2xl font-black text-emerald-400 tracking-tight mt-1">0 kr</h3>
-                        <p class="text-[11px] text-slate-400 mt-1 flex items-center gap-1">
-                            <i class="fa-solid fa-arrow-trend-up text-emerald-400"></i>
-                            <span>Суммарно оба партнера</span>
-                        </p>
-                    </div>
-                    <div class="p-3 bg-emerald-500/10 rounded-xl text-emerald-400">
-                        <i class="fa-solid fa-wallet text-xl"></i>
-                    </div>
-                </div>
-
-                <div class="glass-card p-5 rounded-2xl border-l-4 border-l-rose-500 flex items-center justify-between">
-                    <div>
-                        <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Общий расход семьи</p>
-                        <h3 id="family-stat-expenses" class="text-2xl font-black text-rose-400 tracking-tight mt-1">0 kr</h3>
-                        <p class="text-[11px] text-slate-400 mt-1 flex items-center gap-1">
-                            <i class="fa-solid fa-arrow-trend-down text-rose-400"></i>
-                            <span>Все семейные траты</span>
-                        </p>
-                    </div>
-                    <div class="p-3 bg-rose-500/10 rounded-xl text-rose-400">
-                        <i class="fa-solid fa-receipt text-xl"></i>
-                    </div>
-                </div>
-
-                <div class="glass-card p-5 rounded-2xl border-l-4 border-l-cyan-500 flex items-center justify-between">
-                    <div>
-                        <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Остаток за месяц</p>
-                        <h3 id="family-stat-balance" class="text-2xl font-black text-slate-100 tracking-tight mt-1">0 kr</h3>
-                        <p class="text-[11px] text-slate-400 mt-1 flex items-center gap-1">
-                            <i class="fa-solid fa-scale-balanced text-cyan-400"></i>
-                            <span>Чистый баланс периода</span>
-                        </p>
-                    </div>
-                    <div class="p-3 bg-cyan-500/10 rounded-xl text-cyan-400">
-                        <i class="fa-solid fa-coins text-xl"></i>
-                    </div>
-                </div>
-
-                <div class="glass-card p-5 rounded-2xl border-l-4 border-l-amber-500 flex items-center justify-between">
-                    <div>
-                        <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Spargrad (Сбережения)</p>
-                        <h3 id="family-stat-savings-rate" class="text-2xl font-black text-amber-400 tracking-tight mt-1">0%</h3>
-                        <p class="text-[11px] text-slate-400 mt-1 flex items-center gap-1">
-                            <i class="fa-solid fa-piggy-bank text-amber-400"></i>
-                            <span>Доля сохраненного бюджета</span>
-                        </p>
-                    </div>
-                    <div class="p-3 bg-amber-500/10 rounded-xl text-amber-400">
-                        <i class="fa-solid fa-percent text-xl"></i>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Partner Shares -->
-            <section class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="glass-card p-4 rounded-2xl border border-cyan-500/20 flex items-center justify-between">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 font-bold">
-                            P1
-                        </div>
-                        <div>
-                            <h4 id="card-p1-title" class="font-bold text-sm text-slate-200">Антон</h4>
-                            <p id="card-p1-sub" class="text-xs text-slate-400">Расходы: 0 kr • Доходы: 0 kr</p>
-                        </div>
-                    </div>
-                    <div class="text-right">
-                        <span id="card-p1-share" class="text-xs font-bold text-cyan-400 bg-cyan-500/10 px-2.5 py-1 rounded-full border border-cyan-500/20">0% расходов</span>
-                    </div>
-                </div>
-
-                <div class="glass-card p-4 rounded-2xl border border-purple-500/20 flex items-center justify-between">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400 font-bold">
-                            P2
-                        </div>
-                        <div>
-                            <h4 id="card-p2-title" class="font-bold text-sm text-slate-200">Мария</h4>
-                            <p id="card-p2-sub" class="text-xs text-slate-400">Расходы: 0 kr • Доходы: 0 kr</p>
-                        </div>
-                    </div>
-                    <div class="text-right">
-                        <span id="card-p2-share" class="text-xs font-bold text-purple-400 bg-purple-500/10 px-2.5 py-1 rounded-full border border-purple-500/20">0% расходов</span>
-                    </div>
-                </div>
-            </section>
-
-            <section class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                <div class="lg:col-span-5 glass-card p-5 rounded-2xl flex flex-col justify-between">
-                    <div class="flex items-center justify-between mb-2">
-                        <h2 class="font-bold text-slate-200 text-sm flex items-center gap-2">
-                            <i class="fa-solid fa-chart-pie text-cyan-400"></i>
-                            Расходы по категориям
-                        </h2>
-                    </div>
-                    <div class="relative min-h-[250px] flex items-center justify-center my-auto">
-                        <canvas id="familyCategoryChart"></canvas>
-                    </div>
-                </div>
-
-                <div class="lg:col-span-7 glass-card p-5 rounded-2xl flex flex-col justify-between">
-                    <div class="flex items-center justify-between mb-2">
-                        <h2 class="font-bold text-slate-200 text-sm flex items-center gap-2">
-                            <i class="fa-solid fa-chart-column text-purple-400"></i>
-                            Сравнение трат партнеров по категориям
-                        </h2>
-                    </div>
-                    <div class="relative min-h-[250px] flex items-center justify-center my-auto">
-                        <canvas id="partnerComparisonChart"></canvas>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Family Transactions Section -->
-            <section class="glass-card p-5 rounded-2xl space-y-4">
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
-                    <div class="flex items-center gap-2">
-                        <i class="fa-solid fa-list-ul text-cyan-400"></i>
-                        <h2 class="font-bold text-slate-200">Общий список транзакций периода</h2>
-                        <span id="family-count-badge" class="px-2 py-0.5 text-xs bg-slate-800 text-slate-400 rounded-full border border-slate-700">0</span>
-                    </div>
-
-                    <div class="flex flex-wrap items-center gap-2">
-                        <div class="relative flex-1 sm:w-40">
-                            <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
-                            <input type="text" id="familyFilterSearch" oninput="renderAll()" placeholder="Поиск..." 
-                                class="w-full pl-8 pr-3 py-1.5 bg-slate-900 border border-slate-700/80 rounded-xl text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-500">
-                        </div>
-
-                        <select id="familyFilterUser" onchange="renderAll()" 
-                            class="px-3 py-1.5 bg-slate-900 border border-slate-700/80 rounded-xl text-xs text-slate-300 focus:outline-none focus:border-cyan-500">
-                            <option value="all">Все члены семьи</option>
-                            <option value="p1" id="filter-user-p1">Антон</option>
-                            <option value="p2" id="filter-user-p2">Мария</option>
-                        </select>
-
-                        <select id="familyFilterCategory" onchange="renderAll()" 
-                            class="px-3 py-1.5 bg-slate-900 border border-slate-700/80 rounded-xl text-xs text-slate-300 focus:outline-none focus:border-cyan-500">
-                            <option value="all">Все категории</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div id="familyTransactionList" class="space-y-2 max-h-[480px] overflow-y-auto pr-1">
-                    <!-- Populated dynamically -->
-                </div>
-            </section>
-        </div>
-
-        <div id="view-personal" class="space-y-6 hidden">
-            
-            <section class="glass-card p-5 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 border-t-4" id="personal-banner-border">
-                <div class="flex items-center gap-3">
-                    <div id="personal-avatar" class="w-12 h-12 rounded-xl flex items-center justify-center font-bold text-lg">
-                        P
-                    </div>
-                    <div>
-                        <h2 id="personal-title" class="text-xl font-black text-slate-100">Персональный кабинет</h2>
-                        <p class="text-xs text-slate-400">Управление личным бюджетом и внесение операционных трат</p>
-                    </div>
-                </div>
-
-                <div class="flex items-center gap-6">
-                    <div>
-                        <p class="text-[11px] uppercase tracking-wider text-slate-400 font-semibold">Доходы</p>
-                        <p id="personal-stat-income" class="text-base font-bold text-emerald-400">0 kr</p>
-                    </div>
-                    <div class="w-px h-8 bg-slate-800"></div>
-                    <div>
-                        <p class="text-[11px] uppercase tracking-wider text-slate-400 font-semibold">Расходы</p>
-                        <p id="personal-stat-expense" class="text-base font-bold text-rose-400">0 kr</p>
-                    </div>
-                    <div class="w-px h-8 bg-slate-800"></div>
-                    <div>
-                        <p class="text-[11px] uppercase tracking-wider text-slate-400 font-semibold">Баланс</p>
-                        <p id="personal-stat-balance" class="text-base font-bold text-slate-100">0 kr</p>
-                    </div>
-                </div>
-            </section>
-
-            <section class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                <!-- Transaction Form -->
-                <div class="lg:col-span-5 glass-card p-5 rounded-2xl space-y-4 h-fit">
-                    <div class="flex items-center justify-between pb-3 border-b border-slate-800">
-                        <div class="flex items-center gap-2">
-                            <i class="fa-solid fa-circle-plus text-cyan-400"></i>
-                            <h3 id="form-title" class="font-bold text-slate-200">Добавить операцию</h3>
-                        </div>
-                        <span id="activeUserFormBadge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
-                            Антон
-                        </span>
-                    </div>
-
-                    <form id="transactionForm" onsubmit="handleFormSubmit(event)" class="space-y-4">
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-400 mb-1.5">Тип операции</label>
-                            <div class="grid grid-cols-2 gap-2">
-                                <button type="button" id="btn-type-expense" onclick="setFormType('expense')" 
-                                    class="py-2 px-3 text-xs font-bold rounded-xl border flex items-center justify-center gap-2 transition-all bg-rose-500/20 text-rose-300 border-rose-500/50">
-                                    <i class="fa-solid fa-arrow-up-right-from-square"></i> Расход
-                                </button>
-                                <button type="button" id="btn-type-income" onclick="setFormType('income')" 
-                                    class="py-2 px-3 text-xs font-bold rounded-xl border flex items-center justify-center gap-2 transition-all bg-slate-800/80 text-slate-400 border-slate-700 hover:bg-slate-700">
-                                    <i class="fa-solid fa-arrow-down-left-and-arrow-up-right-to-center"></i> Доход
-                                </button>
-                            </div>
-                        </div>
-
-                        <div>
-                            <label for="txAmount" class="block text-xs font-semibold text-slate-400 mb-1">Сумма в кронах (SEK / kr)</label>
-                            <div class="relative">
-                                <input type="number" id="txAmount" required min="1" step="any" placeholder="например: 450" 
-                                    class="w-full pl-3.5 pr-10 py-2.5 bg-slate-900 border border-slate-700/80 rounded-xl text-sm font-bold text-slate-100 placeholder-slate-600 focus:outline-none focus:border-cyan-500">
-                                <span class="absolute right-3 top-2.5 text-xs font-bold text-slate-500">kr</span>
-                            </div>
-                        </div>
-
-                        <div>
-                            <label for="txTitle" class="block text-xs font-semibold text-slate-400 mb-1">Магазин / Назначение</label>
-                            <input type="text" id="txTitle" required placeholder="например: ICA Maxi, Willys, Hyra, SL" 
-                                class="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700/80 rounded-xl text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-cyan-500">
-                        </div>
-
-                        <div>
-                            <div class="flex items-center justify-between mb-1">
-                                <label for="txCategory" class="block text-xs font-semibold text-slate-400">Категория</label>
-                                <button type="button" onclick="openNewCategoryModal()" class="text-[11px] font-bold text-cyan-400 hover:text-cyan-300 flex items-center gap-1 transition-colors">
-                                    <i class="fa-solid fa-folder-plus text-xs"></i>
-                                    <span>+ Новая категория</span>
-                                </button>
-                            </div>
-                            <div class="flex gap-2">
-                                <select id="txCategory" required onchange="handleCategorySelectChange(this.value)"
-                                    class="w-full px-3 py-2.5 bg-slate-900 border border-slate-700/80 rounded-xl text-xs text-slate-100 focus:outline-none focus:border-cyan-500">
-                                    <!-- Options populated dynamically -->
-                                </select>
-                                <button type="button" onclick="openNewCategoryModal()" title="Добавить новую категорию" 
-                                    class="px-3 py-2.5 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 rounded-xl text-xs font-bold flex items-center gap-1 active:scale-95 transition-all flex-shrink-0">
-                                    <i class="fa-solid fa-plus"></i>
-                                    <span class="hidden sm:inline">Новая</span>
-                                </button>
-                            </div>
-                        </div>
-
-                        <div>
-                            <label for="txDate" class="block text-xs font-semibold text-slate-400 mb-1">Дата</label>
-                            <input type="date" id="txDate" required 
-                                class="w-full px-3 py-2 bg-slate-900 border border-slate-700/80 rounded-xl text-xs text-slate-100 focus:outline-none focus:border-cyan-500">
-                        </div>
-
-                        <div class="p-3 bg-slate-900/90 rounded-xl border border-slate-800 flex items-center gap-3 cursor-pointer">
-                            <input type="checkbox" id="txIsRecurring" class="w-4 h-4 accent-purple-500 rounded cursor-pointer">
-                            <label for="txIsRecurring" class="text-xs font-bold text-slate-200 cursor-pointer flex items-center gap-2 select-none">
-                                <i class="fa-solid fa-arrows-rotate text-purple-400 text-xs"></i>
-                                <span>Постоянный платеж (каждый месяц)</span>
-                            </label>
-                        </div>
-
-                        <div class="flex gap-2 pt-2">
-                            <button type="submit" id="btn-submit-tx" 
-                                class="flex-1 py-2.5 px-4 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-cyan-500/20 active:scale-95 transition-all flex items-center justify-center gap-2">
-                                <i class="fa-solid fa-check"></i>
-                                <span>Сохранить запись</span>
-                            </button>
-                            <button type="button" id="btn-cancel-edit" onclick="cancelEdit()" style="display: none;" 
-                                class="py-2.5 px-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs rounded-xl">
-                                Отмена
-                            </button>
-                        </div>
-                    </form>
-                </div>
-
-                <div class="lg:col-span-7 glass-card p-5 rounded-2xl space-y-4 flex flex-col justify-between">
-                    <div>
-                        <div class="flex items-center justify-between pb-3 border-b border-slate-800">
-                            <h3 class="font-bold text-slate-200 text-sm flex items-center gap-2">
-                                <i class="fa-solid fa-clock-rotate-left text-cyan-400"></i>
-                                Личные транзакции
-                            </h3>
-                            <span id="personal-count-badge" class="px-2 py-0.5 text-xs bg-slate-800 text-slate-400 rounded-full border border-slate-700">0</span>
-                        </div>
-
-                        <div id="personalTransactionList" class="mt-4 space-y-2 max-h-[420px] overflow-y-auto pr-1">
-                            <!-- Populated dynamically -->
-                        </div>
-                    </div>
-                </div>
-            </section>
-        </div>
-
+  <!-- Шапка -->
+  <header>
+    <div class="brand">
+      <span style="font-size: 2rem;">🇸🇪</span>
+      <div>
+        <h1>FamiljBudget</h1>
+        <p style="font-size: 0.8rem; color: var(--text-muted);">Семейный бюджет Швеция (SEK)</p>
+      </div>
     </div>
 
-    <!-- New Category Modal -->
-    <div id="newCategoryModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-        <div class="glass-card max-w-md w-full p-6 rounded-2xl space-y-4 border border-cyan-500/30 shadow-2xl">
-            <div class="flex justify-between items-center pb-2 border-b border-slate-800">
-                <h3 class="font-bold text-lg text-slate-100 flex items-center gap-2">
-                    <i class="fa-solid fa-folder-plus text-cyan-400"></i> Создать категорию
-                </h3>
-                <button onclick="closeNewCategoryModal()" class="text-slate-400 hover:text-slate-200">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
-            </div>
-            
-            <form onsubmit="handleCreateCategorySubmit(event)" class="space-y-4">
-                <div>
-                    <label class="block text-xs font-semibold text-slate-400 mb-1">Название категории</label>
-                    <input type="text" id="newCatName" required placeholder="например: Möbler, Hobby, Ремонт" 
-                        class="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-cyan-500">
-                </div>
-
-                <div>
-                    <label class="block text-xs font-semibold text-slate-400 mb-1">Тип операции</label>
-                    <div class="grid grid-cols-2 gap-2">
-                        <label class="p-2.5 rounded-xl border border-slate-700 bg-slate-900 flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-300 hover:border-slate-600">
-                            <input type="radio" name="newCatType" value="expense" checked class="accent-rose-500">
-                            <span>Расход</span>
-                        </label>
-                        <label class="p-2.5 rounded-xl border border-slate-700 bg-slate-900 flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-300 hover:border-slate-600">
-                            <input type="radio" name="newCatType" value="income" class="accent-emerald-500">
-                            <span>Доход</span>
-                        </label>
-                    </div>
-                </div>
-
-                <div>
-                    <label class="block text-xs font-semibold text-slate-400 mb-1.5">Выберите эмодзи-иконку</label>
-                    <div class="grid grid-cols-8 gap-1.5 p-2 bg-slate-900 rounded-xl border border-slate-800 max-h-32 overflow-y-auto" id="emojiPickerGrid">
-                        <!-- Populated dynamically -->
-                    </div>
-                </div>
-
-                <div class="flex gap-2 pt-2">
-                    <button type="button" onclick="closeNewCategoryModal()" class="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl">
-                        Отмена
-                    </button>
-                    <button type="submit" class="flex-1 py-2.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-cyan-500/20 transition-all">
-                        Сохранить
-                    </button>
-                </div>
-            </form>
-        </div>
+    <!-- Выбор месяца -->
+    <div class="month-picker">
+      <button class="month-btn" onclick="changeMonth(-1)">←</button>
+      <div class="month-display" id="currentMonthLabel">Сентябрь 2026</div>
+      <button class="month-btn" onclick="changeMonth(1)">→</button>
     </div>
 
-    <!-- Settings Modal -->
-    <div id="settingsModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-        <div class="glass-card max-w-md w-full p-6 rounded-2xl space-y-5 border border-slate-700 shadow-2xl max-h-[90vh] overflow-y-auto">
-            <div class="flex justify-between items-center pb-2 border-b border-slate-800">
-                <h3 class="font-bold text-lg text-slate-100 flex items-center gap-2">
-                    <i class="fa-solid fa-gear text-amber-400"></i> Настройки и категории
-                </h3>
-                <button onclick="closeSettingsModal()" class="text-slate-400 hover:text-slate-200">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
-            </div>
-            
-            <div class="space-y-3">
-                <h4 class="text-xs font-bold text-cyan-400 uppercase tracking-wider">Имена членов семьи</h4>
-                <div>
-                    <label for="input-p1-name" class="block text-xs font-semibold text-slate-400 mb-1">Имя Партнера 1</label>
-                    <input type="text" id="input-p1-name" class="w-full px-3.5 py-2 bg-slate-900 border border-slate-700 rounded-xl text-sm text-slate-100 focus:outline-none focus:border-cyan-500">
-                </div>
-                <div>
-                    <label for="input-p2-name" class="block text-xs font-semibold text-slate-400 mb-1">Имя Партнера 2</label>
-                    <input type="text" id="input-p2-name" class="w-full px-3.5 py-2 bg-slate-900 border border-slate-700 rounded-xl text-sm text-slate-100 focus:outline-none focus:border-cyan-500">
-                </div>
-                <button onclick="savePartnerNames()" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl border border-slate-700">
-                    Сохранить имена
-                </button>
-            </div>
+    <!-- Кнопки управления -->
+    <div class="header-actions">
+      <button class="btn btn-purple" onclick="copyRecurringPayments()">
+        <span>📋</span> Перенести регулярные
+      </button>
+      <button class="btn" onclick="openModal('settingsModal')">
+        <span>⚙️</span> Настройки
+      </button>
+      <button class="btn" onclick="openModal('backupModal')">
+        <span>💾</span> Бэкап
+      </button>
+    </div>
+  </header>
 
-            <div class="space-y-3 pt-3 border-t border-slate-800">
-                <div class="flex items-center justify-between">
-                    <h4 class="text-xs font-bold text-purple-400 uppercase tracking-wider">Управление категориями</h4>
-                    <button onclick="openNewCategoryModal(); closeSettingsModal();" class="text-[11px] font-bold text-cyan-400 hover:underline">
-                        + Добавить
-                    </button>
-                </div>
+  <!-- Вкладки членов семьи -->
+  <div class="nav-tabs">
+    <button class="tab-btn active" onclick="switchTab('all')" id="tabAll">🏠 Общий семейный бюджет</button>
+    <button class="tab-btn" onclick="switchTab('p1')" id="tabP1">👤 Партнер 1</button>
+    <button class="tab-btn" onclick="switchTab('p2')" id="tabP2">👤 Партнер 2</button>
+  </div>
 
-                <div id="settingsCategoryList" class="space-y-1.5 max-h-48 overflow-y-auto pr-1">
-                    <!-- Dynamic categories list -->
-                </div>
-            </div>
+  <!-- Сводка бюджетов -->
+  <div class="summary-grid">
+    <div class="card">
+      <div class="card-title">Доходы (Inkomster)</div>
+      <div class="card-value val-income" id="statIncome">0 kr</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Расходы (Utgifter)</div>
+      <div class="card-value val-expense" id="statExpenses">0 kr</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Чистый остаток (Saldo)</div>
+      <div class="card-value val-balance" id="statBalance">0 kr</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Норма сбережений (Spargrad)</div>
+      <div class="card-value val-savings" id="statSavings">0%</div>
+    </div>
+  </div>
+
+  <!-- Графики -->
+  <div class="main-grid">
+    <div class="card">
+      <div class="card-title">Расходы по категориям</div>
+      <div class="chart-container">
+        <canvas id="categoryChart"></canvas>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Сравнение расходов партнеров</div>
+      <div class="chart-container">
+        <canvas id="partnerChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Добавление транзакции и Список -->
+  <div class="main-grid">
+    
+    <!-- Форма добавления -->
+    <div class="card">
+      <div class="card-title" style="margin-bottom: 16px;">Добавить операцию</div>
+      <form id="txForm" onsubmit="handleFormSubmit(event)">
+        <div class="form-group">
+          <label>Тип операции</label>
+          <select class="form-control" id="txType" onchange="updateCategoryDropdown()">
+            <option value="expense">Расход (Utgift)</option>
+            <option value="income">Доход (Inkomst)</option>
+          </select>
         </div>
+
+        <div class="form-group flex-row">
+          <div style="flex: 2;">
+            <label>Сумма (в кронах / SEK)</label>
+            <input type="number" class="form-control" id="txAmount" placeholder="0" step="any" required>
+          </div>
+          <div style="flex: 2;">
+            <label>Кто платит / получает</label>
+            <select class="form-control" id="txPartner">
+              <!-- Имена подгрузятся из JS -->
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Категория</label>
+          <div style="display: flex; gap: 8px;">
+            <select class="form-control" id="txCategory" required></select>
+            <button type="button" class="btn" onclick="openModal('newCatModal')">+ Новая</button>
+          </div>
+        </div>
+
+        <div class="form-group flex-row">
+          <div style="flex: 1;">
+            <label>Дата</label>
+            <input type="date" class="form-control" id="txDate" required>
+          </div>
+          <div style="flex: 1.5;">
+            <label>Описание (опционально)</label>
+            <input type="text" class="form-control" id="txNote" placeholder="например, ICA Maxi / Willys">
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-top: 10px;">
+          <label class="checkbox-label">
+            <input type="checkbox" id="txRecurring">
+            <span>🔄 Постоянный платеж (каждый месяц)</span>
+          </label>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 12px; margin-top: 8px;">
+          Сохранить операцию
+        </button>
+      </form>
     </div>
 
-    <!-- Export Modal -->
-    <div id="exportModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-        <div class="glass-card max-w-md w-full p-6 rounded-2xl space-y-4 border border-slate-700 shadow-2xl">
-            <div class="flex justify-between items-center pb-2 border-b border-slate-800">
-                <h3 class="font-bold text-lg text-slate-100 flex items-center gap-2">
-                    <i class="fa-solid fa-database text-emerald-400"></i> Резервное копирование
-                </h3>
-                <button onclick="closeExportModal()" class="text-slate-400 hover:text-slate-200">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
-            </div>
-            
-            <p class="text-xs text-slate-400 leading-relaxed">
-                Сохраните полную резервную копию семейного бюджета в JSON файл или загрузите ранее сохраненный бэкап.
-            </p>
-
-            <div class="space-y-3 pt-2">
-                <button onclick="exportDataJSON()" class="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs rounded-xl flex items-center justify-center gap-2 transition-all">
-                    <i class="fa-solid fa-download"></i> Скачать JSON бэкап
-                </button>
-                
-                <label class="w-full py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs rounded-xl flex items-center justify-center gap-2 cursor-pointer border border-slate-700 transition-all">
-                    <i class="fa-solid fa-upload text-cyan-400"></i> Загрузить JSON
-                    <input type="file" id="importFile" accept=".json" onchange="importDataJSON(event)" class="hidden">
-                </label>
-            </div>
-        </div>
+    <!-- Список транзакций -->
+    <div class="card">
+      <div class="card-title" style="margin-bottom: 16px;">История операций за месяц</div>
+      <div class="tx-list" id="txListContainer">
+        <!-- Подгружается динамически -->
+      </div>
     </div>
 
-    <!-- Confirm Modal -->
-    <div id="confirmModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-        <div class="glass-card max-w-sm w-full p-6 rounded-2xl space-y-4 border border-slate-700 text-center">
-            <div class="w-12 h-12 bg-rose-500/10 text-rose-400 rounded-full flex items-center justify-center mx-auto">
-                <i class="fa-solid fa-triangle-exclamation text-xl"></i>
-            </div>
-            <h3 id="confirmTitle" class="font-bold text-lg text-slate-100">Подтверждение</h3>
-            <p id="confirmMessage" class="text-xs text-slate-400">Вы уверены?</p>
-            <div class="flex gap-2 pt-2">
-                <button onclick="closeConfirmModal()" class="flex-1 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl">
-                    Отмена
-                </button>
-                <button id="confirmBtnAction" onclick="executeConfirmAction()" class="flex-1 py-2 bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold rounded-xl">
-                    Подтвердить
-                </button>
-            </div>
+  </div>
+
+  <!-- Модальное окно: Новая категория -->
+  <div class="modal-overlay" id="newCatModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Новая категория</h3>
+        <button class="modal-close" onclick="closeModal('newCatModal')">✕</button>
+      </div>
+      <form onsubmit="handleCreateCategory(event)">
+        <div class="form-group">
+          <label>Название категории</label>
+          <input type="text" id="catName" class="form-control" placeholder="например, Детские секции" required>
         </div>
+        <div class="form-group flex-row">
+          <div style="flex: 1;">
+            <label>Тип</label>
+            <select id="catType" class="form-control">
+              <option value="expense">Расход</option>
+              <option value="income">Доход</option>
+            </select>
+          </div>
+          <div style="flex: 1;">
+            <label>Эмодзи иконка</label>
+            <input type="text" id="catIcon" class="form-control" value="🏷️" required>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; margin-top: 10px;">
+          Создать категорию
+        </button>
+      </form>
     </div>
+  </div>
 
-    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+  <!-- Модальное окно: Настройки -->
+  <div class="modal-overlay" id="settingsModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Настройки членов семьи</h3>
+        <button class="modal-close" onclick="closeModal('settingsModal')">✕</button>
+      </div>
+      <form onsubmit="handleSaveSettings(event)">
+        <div class="form-group">
+          <label>Имя Партнера 1</label>
+          <input type="text" id="setP1" class="form-control" required>
+        </div>
+        <div class="form-group">
+          <label>Имя Партнера 2</label>
+          <input type="text" id="setP2" class="form-control" required>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; margin-top: 10px;">
+          Сохранить имена
+        </button>
+      </form>
+    </div>
+  </div>
 
-    <script>
-        const DEFAULT_CATEGORIES = {
-            salary: { name: 'Lön / Зарплата', color: '#10b981', icon: 'wallet', type: 'income', emoji: '💰' },
-            barnbidrag: { name: 'Barnbidrag / Пособие', color: '#06b6d4', icon: 'baby', type: 'income', emoji: '👶' },
-            other_inc: { name: 'Övrigt / Прочий доход', color: '#3b82f6', icon: 'coins', type: 'income', emoji: '💵' },
-            
-            housing: { name: 'Boende / Жилье (Hyra)', color: '#6366f1', icon: 'house', type: 'expense', emoji: '🏠' },
-            products: { name: 'Mat (ICA, Willys, Coop)', color: '#f59e0b', icon: 'cart-shopping', type: 'expense', emoji: '🛒' },
-            transport: { name: 'Transport (SL, Bensin)', color: '#3b82f6', icon: 'car', type: 'expense', emoji: '🚗' },
-            utility: { name: 'El & Bredband / Коммуналка', color: '#eab308', icon: 'bolt', type: 'expense', emoji: '⚡' },
-            insurance: { name: 'Försäkringar (Folksam)', color: '#f43f5e', icon: 'shield-halved', type: 'expense', emoji: '🛡️' },
-            kids: { name: 'Barn & Skola / Дети', color: '#ec4899', icon: 'child', type: 'expense', emoji: '🧸' },
-            fika: { name: 'Mat ute & Nöjen (Fika)', color: '#a855f7', icon: 'mug-hot', type: 'expense', emoji: '☕' },
-            savings: { name: 'Sparande / ISK', color: '#14b8a6', icon: 'chart-line', type: 'expense', emoji: '📈' },
-            shopping: { name: 'Shopping & Övrigt', color: '#64748b', icon: 'bag-shopping', type: 'expense', emoji: '🛍️' }
-        };
+  <!-- Модальное окно: Бэкап -->
+  <div class="modal-overlay" id="backupModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Резервное копирование (JSON)</h3>
+        <button class="modal-close" onclick="closeModal('backupModal')">✕</button>
+      </div>
+      <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 16px;">
+        Вы можете сохранить файл со всеми вашими данными на компьютер или загрузить файл с другого устройства.
+      </p>
+      <div style="display: flex; gap: 10px; flex-direction: column;">
+        <button class="btn btn-primary" onclick="exportData()" style="justify-content: center;">
+          📥 Скачать файл данных (Export JSON)
+        </button>
+        <label class="btn" style="justify-content: center; cursor: pointer;">
+          📤 Загрузить файл данных (Import JSON)
+          <input type="file" accept=".json" onchange="importData(event)" style="display: none;">
+        </label>
+      </div>
+    </div>
+  </div>
 
-        const EMOJI_OPTIONS = ['🛒', '🏠', '🚗', '⚡', '🛡️', '🧸', '☕', '📈', '🛍️', '💰', '👶', '💵', '🏋️', '✈️', '🐾', '🎮', '🎁', '🔧', '💊', '📚', '👗', '🚲', '🍕', '🍿'];
+  <script>
+    // Инициализация состояния
+    const STORAGE_KEY = 'familj_budget_se_v3';
+    
+    let state = {
+      activeTab: 'all',
+      currentYear: 2026,
+      currentMonth: 8, // 0 = Январь, 8 = Сентябрь
+      settings: {
+        partner1: 'Антон',
+        partner2: 'Мария'
+      },
+      categories: [
+        { id: 'cat_boende', name: 'Boende (Жилье/Hyra)', type: 'expense', icon: '🏠' },
+        { id: 'cat_mat', name: 'Mat (ICA/Willys/Coop)', type: 'expense', icon: '🛒' },
+        { id: 'cat_el', name: 'El & Bredband', type: 'expense', icon: '⚡' },
+        { id: 'cat_transport', name: 'Transport (SL/Бензин)', type: 'expense', icon: '🚗' },
+        { id: 'cat_forsakring', name: 'Försäkringar (Folksam)', type: 'expense', icon: '🛡️' },
+        { id: 'cat_barn', name: 'Barn & Skola', type: 'expense', icon: '👶' },
+        { id: 'cat_fika', name: 'Mat ute & Fika', type: 'expense', icon: '☕' },
+        { id: 'cat_isk', name: 'Sparande / ISK', type: 'expense', icon: '📈' },
+        { id: 'cat_lon', name: 'Lön (Зарплата)', type: 'income', icon: '💼' },
+        { id: 'cat_barnbidrag', name: 'Barnbidrag', type: 'income', icon: '🧸' },
+        { id: 'cat_other', name: 'Övrigt (Прочее)', type: 'expense', icon: '📦' }
+      ],
+      transactions: []
+    };
 
-        const now = new Date();
-        const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    let catChartInstance = null;
+    let partnerChartInstance = null;
 
-        const CLOUD_ENDPOINT = 'https://keyvalue.immanuel.co/api/KeyVal/GetValue/takome988_familj_se/state';
-        const CLOUD_POST_ENDPOINT = 'https://keyvalue.immanuel.co/api/KeyVal/PostValue/takome988_familj_se/state/';
+    // Месяцы на русском
+    const monthNames = [
+      'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 
+      'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
+    ];
 
-        const DEMO_TRANSACTIONS = [
-            { id: 'tx_1', user: 'p1', title: 'Зарплата (Lön efter skatt)', amount: 36000, type: 'income', category: 'salary', date: `${currentMonthStr}-25`, isRecurring: true },
-            { id: 'tx_2', user: 'p1', title: 'Аренда квартиры (Hyra/Avgift)', amount: 12500, type: 'expense', category: 'housing', date: `${currentMonthStr}-28`, isRecurring: true },
-            { id: 'tx_3', user: 'p1', title: 'Покупки в ICA Maxi', amount: 2450, type: 'expense', category: 'products', date: `${currentMonthStr}-03`, isRecurring: false },
-            { id: 'tx_4', user: 'p1', title: 'Электричество (Vattenfall)', amount: 1100, type: 'expense', category: 'utility', date: `${currentMonthStr}-15`, isRecurring: true },
-            { id: 'tx_5', user: 'p1', title: 'Пополнение ISK (Avanza)', amount: 4000, type: 'expense', category: 'savings', date: `${currentMonthStr}-26`, isRecurring: true },
-            { id: 'tx_6', user: 'p2', title: 'Зарплата (Lön efter skatt)', amount: 33000, type: 'income', category: 'salary', date: `${currentMonthStr}-25`, isRecurring: true },
-            { id: 'tx_7', user: 'p2', title: 'Детские пособия (Barnbidrag)', amount: 1250, type: 'income', category: 'barnbidrag', date: `${currentMonthStr}-20`, isRecurring: true },
-            { id: 'tx_8', user: 'p2', title: 'Продукты в Willys', amount: 1850, type: 'expense', category: 'products', date: `${currentMonthStr}-08`, isRecurring: false },
-            { id: 'tx_9', user: 'p2', title: 'Страховка Folksam', amount: 750, type: 'expense', category: 'insurance', date: `${currentMonthStr}-18`, isRecurring: true },
-            { id: 'tx_10', user: 'p2', title: 'Проездной SL Månadsbiljett', amount: 1020, type: 'expense', category: 'transport', date: `${currentMonthStr}-01`, isRecurring: true }
+    // Загрузка сохраненных данных
+    function loadState() {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        try {
+          state = JSON.parse(saved);
+        } catch(e) {
+          console.error("Ошибка чтения данных:", e);
+        }
+      } else {
+        // Тестовые данные при первом запуске
+        state.transactions = [
+          { id: '1', date: '2026-09-01', amount: 12500, type: 'expense', categoryId: 'cat_boende', partner: 'p1', note: 'Avgift / Hyra', isRecurring: true },
+          { id: '2', date: '2026-09-03', amount: 1450, type: 'expense', categoryId: 'cat_mat', partner: 'p2', note: 'ICA Maxi', isRecurring: false },
+          { id: '3', date: '2026-09-25', amount: 32000, type: 'income', categoryId: 'cat_lon', partner: 'p1', note: 'Lön', isRecurring: true },
+          { id: '4', date: '2026-09-25', amount: 28000, type: 'income', categoryId: 'cat_lon', partner: 'p2', note: 'Lön', isRecurring: true },
+          { id: '5', date: '2026-09-20', amount: 1250, type: 'income', categoryId: 'cat_barnbidrag', partner: 'p2', note: 'Försäkringskassan', isRecurring: true }
         ];
-
-        window.AppState = {
-            settings: { p1Name: 'Антон', p2Name: 'Мария' },
-            categories: { ...DEFAULT_CATEGORIES },
-            transactions: [...DEMO_TRANSACTIONS],
-            selectedMonth: currentMonthStr,
-            currentTab: 'family',
-            currentFormType: 'expense',
-            selectedEmoji: '🛍️',
-            editingId: null,
-            pendingAction: null,
-            lastCloudUpdate: 0
-        };
-
-        let familyChartInstance = null;
-        let partnerComparisonChartInstance = null;
-
-        async function pullFromCloud(showToastNotice = false) {
-            const icon = document.getElementById('syncSpinnerIcon');
-            if (icon) icon.classList.add('fa-spin');
-
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 3000);
-
-            try {
-                const response = await fetch(CLOUD_ENDPOINT, { signal: controller.signal });
-                clearTimeout(timeoutId);
-                
-                if (response.ok) {
-                    const dataText = await response.text();
-                    if (dataText && dataText !== "null" && dataText.trim() !== "") {
-                        const parsed = JSON.parse(dataText);
-                        if (parsed && parsed.updatedAt && parsed.updatedAt > window.AppState.lastCloudUpdate) {
-                            window.AppState.lastCloudUpdate = parsed.updatedAt;
-                            if (parsed.transactions) window.AppState.transactions = parsed.transactions;
-                            if (parsed.categories) window.AppState.categories = { ...DEFAULT_CATEGORIES, ...parsed.categories };
-                            if (parsed.settings) window.AppState.settings = parsed.settings;
-
-                            saveToLocalStorage();
-                            updatePartnerLabels();
-                            populateCategoryDropdowns();
-                            renderAll();
-                            if (showToastNotice) showToast('Данные успешно загружены из облака!');
-                        } else if (showToastNotice) {
-                            showToast('Данные уже актуальны!');
-                        }
-                    } else if (showToastNotice) {
-                        showToast('Облачное хранилище готово');
-                    }
-                    updateSyncBadge(true);
-                }
-            } catch (err) {
-                console.warn('Cloud sync offline fallback active', err);
-                updateSyncBadge(false);
-                if (showToastNotice) showToast('Работа в локальном режиме', 'error');
-            } finally {
-                if (icon) icon.classList.remove('fa-spin');
-            }
-        }
-
-        async function pushStateToCloud() {
-            const nowTs = Date.now();
-            window.AppState.lastCloudUpdate = nowTs;
-            saveToLocalStorage();
-
-            const payload = JSON.stringify({
-                transactions: window.AppState.transactions,
-                categories: window.AppState.categories,
-                settings: window.AppState.settings,
-                updatedAt: nowTs
-            });
-
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 3000);
-
-            try {
-                await fetch(CLOUD_POST_ENDPOINT + encodeURIComponent(payload), {
-                    method: 'POST',
-                    signal: controller.signal
-                });
-                clearTimeout(timeoutId);
-                updateSyncBadge(true);
-            } catch (err) {
-                console.warn('Cloud update saved locally', err);
-                updateSyncBadge(false);
-            }
-        }
-
-        function saveToLocalStorage() {
-            try {
-                localStorage.setItem('se_family_budget_tx', JSON.stringify(window.AppState.transactions));
-                localStorage.setItem('se_family_budget_settings', JSON.stringify(window.AppState.settings));
-                localStorage.setItem('se_family_budget_categories', JSON.stringify(window.AppState.categories));
-            } catch(e) {}
-        }
-
-        function updateSyncBadge(connected) {
-            const badge = document.getElementById('syncStatusBadge');
-            if (badge) {
-                if (connected) {
-                    badge.className = "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
-                    badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> 🟢 Облако подключено (Авто-синхронизация)`;
-                } else {
-                    badge.className = "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20";
-                    badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span> 🟡 Локальный режим`;
-                }
-            }
-        }
-
-        window.prevMonth = function() {
-            const [y, m] = window.AppState.selectedMonth.split('-').map(Number);
-            const date = new Date(y, m - 2, 1);
-            window.AppState.selectedMonth = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-            renderAll();
-        };
-
-        window.nextMonth = function() {
-            const [y, m] = window.AppState.selectedMonth.split('-').map(Number);
-            const date = new Date(y, m, 1);
-            window.AppState.selectedMonth = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-            renderAll();
-        };
-
-        window.copyRecurringPaymentsToCurrentMonth = function() {
-            const targetMonth = window.AppState.selectedMonth;
-            const recurringTemplates = window.AppState.transactions.filter(t => t.isRecurring);
-
-            if (recurringTemplates.length === 0) {
-                showToast('Нет отмеченных постоянных платежей', 'error');
-                return;
-            }
-
-            const uniqueTemplates = [];
-            const seenKeys = new Set();
-
-            recurringTemplates.forEach(t => {
-                const key = `${t.user}_${t.title.toLowerCase()}_${t.amount}_${t.category}_${t.type}`;
-                if (!seenKeys.has(key)) {
-                    seenKeys.add(key);
-                    uniqueTemplates.push(t);
-                }
-            });
-
-            const targetMonthTx = window.AppState.transactions.filter(t => t.date && t.date.startsWith(targetMonth));
-            let addedCount = 0;
-
-            uniqueTemplates.forEach(tmpl => {
-                const exists = targetMonthTx.some(t => 
-                    t.user === tmpl.user && 
-                    t.title.toLowerCase() === tmpl.title.toLowerCase() && 
-                    Number(t.amount) === Number(tmpl.amount) &&
-                    t.type === tmpl.type
-                );
-
-                if (!exists) {
-                    const dayPart = tmpl.date ? tmpl.date.split('-')[2] || '01' : '01';
-                    const newTx = {
-                        id: 'tx_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
-                        user: tmpl.user,
-                        title: tmpl.title,
-                        amount: Number(tmpl.amount),
-                        type: tmpl.type,
-                        category: tmpl.category,
-                        date: `${targetMonth}-${dayPart}`,
-                        isRecurring: true
-                    };
-                    window.AppState.transactions.unshift(newTx);
-                    addedCount++;
-                }
-            });
-
-            if (addedCount > 0) {
-                pushStateToCloud();
-                renderAll();
-                showToast(`Перенесено ${addedCount} постоянных платежей в ${formatMonthName(targetMonth)}!`);
-            } else {
-                showToast(`Все постоянные платежи уже внесены в ${formatMonthName(targetMonth)}.`, 'error');
-            }
-        };
-
-        function formatMonthName(monthStr) {
-            const [y, m] = monthStr.split('-').map(Number);
-            const dateObj = new Date(y, m - 1, 1);
-            const label = dateObj.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' });
-            return label.charAt(0).toUpperCase() + label.slice(1);
-        }
-
-        window.openNewCategoryModal = function() {
-            renderEmojiPicker();
-            document.getElementById('newCategoryModal').classList.remove('hidden');
-        };
-
-        window.closeNewCategoryModal = function() {
-            document.getElementById('newCategoryModal').classList.add('hidden');
-            document.getElementById('newCatName').value = '';
-        };
-
-        function renderEmojiPicker() {
-            const grid = document.getElementById('emojiPickerGrid');
-            grid.innerHTML = EMOJI_OPTIONS.map(emoji => `
-                <button type="button" onclick="selectEmoji('${emoji}')" 
-                    class="emoji-btn p-2 text-base rounded-xl hover:bg-slate-800 transition-all ${window.AppState.selectedEmoji === emoji ? 'bg-cyan-500/20 border border-cyan-500' : ''}">
-                    ${emoji}
-                </button>
-            `).join('');
-        }
-
-        window.selectEmoji = function(emoji) {
-            window.AppState.selectedEmoji = emoji;
-            renderEmojiPicker();
-        };
-
-        window.handleCategorySelectChange = function(val) {
-            if (val === '__NEW__') openNewCategoryModal();
-        };
-
-        window.handleCreateCategorySubmit = function(e) {
-            e.preventDefault();
-            const name = document.getElementById('newCatName').value.trim();
-            const type = document.querySelector('input[name="newCatType"]:checked').value;
-            
-            if (!name) return;
-
-            const catKey = 'cat_' + Date.now();
-            window.AppState.categories[catKey] = {
-                name: name,
-                color: type === 'expense' ? '#f43f5e' : '#10b981',
-                icon: 'folder',
-                type: type,
-                emoji: window.AppState.selectedEmoji || '🛍️'
-            };
-
-            setFormType(type);
-            populateCategoryDropdowns();
-            document.getElementById('txCategory').value = catKey;
-
-            closeNewCategoryModal();
-            pushStateToCloud();
-            renderSettingsCategoryList();
-            showToast(`Категория "${name}" успешно создана!`);
-        };
-
-        function populateCategoryDropdowns() {
-            const txCat = document.getElementById('txCategory');
-            const famCat = document.getElementById('familyFilterCategory');
-            const cats = window.AppState.categories;
-            const activeFormType = window.AppState.currentFormType;
-
-            const options = Object.keys(cats)
-                .filter(k => cats[k].type === activeFormType)
-                .map(k => `<option value="${k}">${cats[k].emoji ? cats[k].emoji + ' ' : ''}${cats[k].name}</option>`);
-
-            options.push(`<option value="__NEW__" class="font-bold text-cyan-400">+ Создать новую категорию...</option>`);
-            txCat.innerHTML = options.join('');
-
-            famCat.innerHTML = `<option value="all">Все категории</option>` + 
-                Object.keys(cats)
-                .map(k => `<option value="${k}">${cats[k].emoji ? cats[k].emoji + ' ' : ''}${cats[k].name}</option>`)
-                .join('');
-        }
-
-        window.setFormType = function(type) {
-            window.AppState.currentFormType = type;
-            const btnExp = document.getElementById('btn-type-expense');
-            const btnInc = document.getElementById('btn-type-income');
-
-            if (type === 'expense') {
-                btnExp.className = "py-2 px-3 text-xs font-bold rounded-xl border flex items-center justify-center gap-2 transition-all bg-rose-500/20 text-rose-300 border-rose-500/50";
-                btnInc.className = "py-2 px-3 text-xs font-bold rounded-xl border flex items-center justify-center gap-2 transition-all bg-slate-800/80 text-slate-400 border-slate-700 hover:bg-slate-700";
-            } else {
-                btnInc.className = "py-2 px-3 text-xs font-bold rounded-xl border flex items-center justify-center gap-2 transition-all bg-emerald-500/20 text-emerald-300 border-emerald-500/50";
-                btnExp.className = "py-2 px-3 text-xs font-bold rounded-xl border flex items-center justify-center gap-2 transition-all bg-slate-800/80 text-slate-400 border-slate-700 hover:bg-slate-700";
-            }
-
-            populateCategoryDropdowns();
-        };
-
-        window.handleFormSubmit = function(e) {
-            e.preventDefault();
-
-            const title = document.getElementById('txTitle').value.trim();
-            const amount = parseFloat(document.getElementById('txAmount').value);
-            const date = document.getElementById('txDate').value;
-            const category = document.getElementById('txCategory').value;
-            const isRecurring = document.getElementById('txIsRecurring').checked;
-
-            if (category === '__NEW__') {
-                openNewCategoryModal();
-                return;
-            }
-
-            const activeUser = window.AppState.currentTab === 'family' ? 'p1' : window.AppState.currentTab;
-
-            if (!title || isNaN(amount) || amount <= 0 || !date) {
-                showToast('Заполните все поля корректно', 'error');
-                return;
-            }
-
-            if (window.AppState.editingId) {
-                const idx = window.AppState.transactions.findIndex(t => t.id === window.AppState.editingId);
-                if (idx !== -1) {
-                    window.AppState.transactions[idx] = {
-                        ...window.AppState.transactions[idx],
-                        title, amount, type: window.AppState.currentFormType, category, date, isRecurring
-                    };
-                    showToast('Запись обновлена');
-                }
-                cancelEdit();
-            } else {
-                const newTx = {
-                    id: 'tx_' + Date.now(),
-                    user: activeUser,
-                    title, amount, type: window.AppState.currentFormType, category, date, isRecurring
-                };
-                window.AppState.transactions.unshift(newTx);
-                showToast('Операция добавлена');
-            }
-
-            pushStateToCloud();
-            resetForm();
-            renderAll();
-        };
-
-        function resetForm() {
-            document.getElementById('txTitle').value = '';
-            document.getElementById('txAmount').value = '';
-            document.getElementById('txDate').value = `${window.AppState.selectedMonth}-15`;
-            document.getElementById('txIsRecurring').checked = false;
-        }
-
-        window.startEdit = function(id) {
-            const tx = window.AppState.transactions.find(t => t.id === id);
-            if (!tx) return;
-
-            if (window.AppState.currentTab === 'family') switchTab(tx.user);
-
-            window.AppState.editingId = id;
-            setFormType(tx.type);
-
-            document.getElementById('txTitle').value = tx.title;
-            document.getElementById('txAmount').value = tx.amount;
-            document.getElementById('txDate').value = tx.date;
-            document.getElementById('txCategory').value = tx.category;
-            document.getElementById('txIsRecurring').checked = !!tx.isRecurring;
-
-            document.getElementById('form-title').textContent = 'Редактировать операцию';
-            document.getElementById('btn-submit-tx').querySelector('span').textContent = 'Обновить';
-            document.getElementById('btn-cancel-edit').style.display = 'block';
-
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        };
-
-        window.cancelEdit = function() {
-            window.AppState.editingId = null;
-            document.getElementById('form-title').textContent = 'Добавить операцию';
-            document.getElementById('btn-submit-tx').querySelector('span').textContent = 'Сохранить запись';
-            document.getElementById('btn-cancel-edit').style.display = 'none';
-            resetForm();
-        };
-
-        window.requestDelete = function(id) {
-            window.AppState.pendingAction = () => {
-                window.AppState.transactions = window.AppState.transactions.filter(t => t.id !== id);
-                pushStateToCloud();
-                renderAll();
-                showToast('Запись удалена');
-            };
-            openConfirmModal('Удаление транзакции', 'Вы уверены, что хотите удалить эту операцию?');
-        };
-
-        function formatSEK(val) {
-            return new Intl.NumberFormat('sv-SE', { maximumFractionDigits: 0 }).format(val) + ' kr';
-        }
-
-        window.switchTab = function(tab) {
-            window.AppState.currentTab = tab;
-            
-            const btnFamily = document.getElementById('tab-family');
-            const btnP1 = document.getElementById('tab-p1');
-            const btnP2 = document.getElementById('tab-p2');
-
-            const viewFamily = document.getElementById('view-family');
-            const viewPersonal = document.getElementById('view-personal');
-
-            const activeTabClass = "bg-cyan-500 text-slate-950 shadow-lg shadow-cyan-500/20";
-            const inactiveTabClass = "text-slate-400 hover:text-slate-200 hover:bg-slate-800/50";
-
-            btnFamily.className = `flex-1 min-w-[170px] py-3 px-4 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all duration-200 ${tab === 'family' ? activeTabClass : inactiveTabClass}`;
-            btnP1.className = `flex-1 min-w-[140px] py-3 px-4 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all duration-200 ${tab === 'p1' ? activeTabClass : inactiveTabClass}`;
-            btnP2.className = `flex-1 min-w-[140px] py-3 px-4 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all duration-200 ${tab === 'p2' ? activeTabClass : inactiveTabClass}`;
-
-            if (tab === 'family') {
-                viewFamily.classList.remove('hidden');
-                viewPersonal.classList.add('hidden');
-            } else {
-                viewFamily.classList.add('hidden');
-                viewPersonal.classList.remove('hidden');
-                setupPersonalView(tab);
-            }
-
-            cancelEdit();
-            renderAll();
-        };
-
-        function setupPersonalView(userKey) {
-            const isP1 = userKey === 'p1';
-            const name = isP1 ? window.AppState.settings.p1Name : window.AppState.settings.p2Name;
-            
-            document.getElementById('personal-title').textContent = `Личный кабинет: ${name}`;
-            document.getElementById('activeUserFormBadge').textContent = name;
-            document.getElementById('personal-avatar').textContent = name.charAt(0).toUpperCase();
-            document.getElementById('personal-avatar').className = isP1 
-                ? "w-12 h-12 rounded-xl flex items-center justify-center font-bold text-lg bg-cyan-500/20 text-cyan-400 border border-cyan-500/30"
-                : "w-12 h-12 rounded-xl flex items-center justify-center font-bold text-lg bg-purple-500/20 text-purple-400 border border-purple-500/30";
-
-            document.getElementById('personal-banner-border').className = isP1
-                ? "glass-card p-5 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 border-t-4 border-t-cyan-500"
-                : "glass-card p-5 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 border-t-4 border-t-purple-500";
-        }
-
-        window.renderAll = function() {
-            document.getElementById('currentMonthLabel').textContent = formatMonthName(window.AppState.selectedMonth);
-
-            if (window.AppState.currentTab === 'family') {
-                renderFamilyView();
-            } else {
-                renderPersonalView(window.AppState.currentTab);
-            }
-        };
-
-        function getMonthFilteredTransactions() {
-            const mStr = window.AppState.selectedMonth;
-            return window.AppState.transactions.filter(t => t.date && t.date.startsWith(mStr));
-        }
-
-        function renderFamilyView() {
-            const monthTx = getMonthFilteredTransactions();
-            const filtered = applySearchAndFilters(monthTx);
-
-            const totalIncome = filtered.filter(t => t.type === 'income').reduce((a, b) => a + Number(b.amount), 0);
-            const totalExpense = filtered.filter(t => t.type === 'expense').reduce((a, b) => a + Number(b.amount), 0);
-            const netBalance = totalIncome - totalExpense;
-            const savingsRate = totalIncome > 0 ? Math.max(0, Math.round(((totalIncome - totalExpense) / totalIncome) * 100)) : 0;
-
-            document.getElementById('family-stat-income').textContent = formatSEK(totalIncome);
-            document.getElementById('family-stat-expenses').textContent = formatSEK(totalExpense);
-            document.getElementById('family-stat-balance').textContent = formatSEK(netBalance);
-            document.getElementById('family-stat-savings-rate').textContent = `${savingsRate}%`;
-
-            const p1Expenses = filtered.filter(t => t.user === 'p1' && t.type === 'expense').reduce((a, b) => a + Number(b.amount), 0);
-            const p1Income = filtered.filter(t => t.user === 'p1' && t.type === 'income').reduce((a, b) => a + Number(b.amount), 0);
-            const p2Expenses = filtered.filter(t => t.user === 'p2' && t.type === 'expense').reduce((a, b) => a + Number(b.amount), 0);
-            const p2Income = filtered.filter(t => t.user === 'p2' && t.type === 'income').reduce((a, b) => a + Number(b.amount), 0);
-
-            const p1Share = totalExpense > 0 ? Math.round((p1Expenses / totalExpense) * 100) : 0;
-            const p2Share = totalExpense > 0 ? Math.round((p2Expenses / totalExpense) * 100) : 0;
-
-            document.getElementById('card-p1-sub').textContent = `Расходы: ${formatSEK(p1Expenses)} • Доходы: ${formatSEK(p1Income)}`;
-            document.getElementById('card-p1-share').textContent = `${p1Share}% расходов`;
-
-            document.getElementById('card-p2-sub').textContent = `Расходы: ${formatSEK(p2Expenses)} • Доходы: ${formatSEK(p2Income)}`;
-            document.getElementById('card-p2-share').textContent = `${p2Share}% расходов`;
-
-            renderTransactionFeed(filtered, 'familyTransactionList', true);
-            renderFamilyCategoryChart(filtered);
-            renderPartnerComparisonChart(filtered);
-        }
-
-        function renderPersonalView(userKey) {
-            const monthTx = getMonthFilteredTransactions();
-            const userTx = monthTx.filter(t => t.user === userKey);
-            
-            const income = userTx.filter(t => t.type === 'income').reduce((a, b) => a + Number(b.amount), 0);
-            const expense = userTx.filter(t => t.type === 'expense').reduce((a, b) => a + Number(b.amount), 0);
-            const balance = income - expense;
-
-            document.getElementById('personal-stat-income').textContent = formatSEK(income);
-            document.getElementById('personal-stat-expense').textContent = formatSEK(expense);
-            document.getElementById('personal-stat-balance').textContent = formatSEK(balance);
-
-            const sortedUserTx = [...userTx].sort((a, b) => new Date(b.date) - new Date(a.date));
-            document.getElementById('personal-count-badge').textContent = sortedUserTx.length;
-
-            renderTransactionFeed(sortedUserTx, 'personalTransactionList', false);
-        }
-
-        function renderTransactionFeed(list, containerId, showUserBadge) {
-            const container = document.getElementById(containerId);
-            if (containerId === 'familyTransactionList') {
-                document.getElementById('family-count-badge').textContent = list.length;
-            }
-
-            if (list.length === 0) {
-                container.innerHTML = `
-                    <div class="text-center py-12 space-y-2">
-                        <div class="w-10 h-10 bg-slate-900 rounded-full flex items-center justify-center mx-auto text-slate-500">
-                            <i class="fa-solid fa-inbox text-lg"></i>
-                        </div>
-                        <p class="text-xs text-slate-400">Нет операций за ${formatMonthName(window.AppState.selectedMonth)}</p>
-                    </div>
-                `;
-                return;
-            }
-
-            container.innerHTML = list.map(tx => {
-                const cat = window.AppState.categories[tx.category] || DEFAULT_CATEGORIES.shopping;
-                const isIncome = tx.type === 'income';
-                const isP1 = tx.user === 'p1';
-                const userName = isP1 ? window.AppState.settings.p1Name : window.AppState.settings.p2Name;
-                const userBadgeColor = isP1 ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30' : 'bg-purple-500/10 text-purple-400 border-purple-500/30';
-
-                const dateFormatted = new Date(tx.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
-
-                return `
-                    <div class="flex items-center justify-between p-3 rounded-xl bg-slate-900/60 border border-slate-800/80 hover:border-slate-700 transition-all group">
-                        <div class="flex items-center gap-3 min-w-0">
-                            <div class="w-9 h-9 rounded-xl flex items-center justify-center text-base flex-shrink-0" style="background-color: ${cat.color}15; border: 1px solid ${cat.color}30;">
-                                ${cat.emoji || '🛍️'}
-                            </div>
-                            <div class="min-w-0">
-                                <div class="flex items-center gap-2">
-                                    <h4 class="text-xs font-bold text-slate-200 truncate">${escapeHtml(tx.title)}</h4>
-                                    ${showUserBadge ? `<span class="text-[9px] font-bold px-1.5 py-0.2 rounded border ${userBadgeColor}">${userName}</span>` : ''}
-                                    ${tx.isRecurring ? `<span class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-purple-500/10 text-purple-300 border border-purple-500/20 flex items-center gap-1"><i class="fa-solid fa-rotate-right text-[8px]"></i> Постоянный</span>` : ''}
-                                </div>
-                                <div class="flex items-center gap-2 mt-0.5">
-                                    <span class="text-[10px] text-slate-400">${dateFormatted}</span>
-                                    <span class="text-[10px] font-medium" style="color: ${cat.color};">
-                                        • ${cat.name}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="flex items-center gap-3 flex-shrink-0">
-                            <span class="text-xs font-bold ${isIncome ? 'text-emerald-400' : 'text-slate-200'}">
-                                ${isIncome ? '+' : '-'}${formatSEK(tx.amount)}
-                            </span>
-                            <div class="flex items-center gap-1 opacity-80 sm:opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button onclick="startEdit('${tx.id}')" class="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-slate-200">
-                                    <i class="fa-solid fa-pen-to-square text-xs"></i>
-                                </button>
-                                <button onclick="requestDelete('${tx.id}')" class="p-1 hover:bg-rose-950/50 rounded text-slate-400 hover:text-rose-400">
-                                    <i class="fa-solid fa-trash-can text-xs"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        function renderFamilyCategoryChart(dataList) {
-            const canvas = document.getElementById('familyCategoryChart');
-            if (!canvas) return;
-            const ctx = canvas.getContext('2d');
-            const expenses = dataList.filter(t => t.type === 'expense');
-
-            const categorySums = {};
-            expenses.forEach(tx => {
-                categorySums[tx.category] = (categorySums[tx.category] || 0) + Number(tx.amount);
-            });
-
-            const labels = [];
-            const data = [];
-            const colors = [];
-
-            Object.keys(categorySums).forEach(catKey => {
-                const cat = window.AppState.categories[catKey] || DEFAULT_CATEGORIES.shopping;
-                labels.push((cat.emoji ? cat.emoji + ' ' : '') + cat.name.split(' / ')[0]);
-                data.push(categorySums[catKey]);
-                colors.push(cat.color);
-            });
-
-            if (familyChartInstance) familyChartInstance.destroy();
-
-            familyChartInstance = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        data: data,
-                        backgroundColor: colors.length > 0 ? colors : ['#334155'],
-                        borderColor: '#090d16',
-                        borderWidth: 3
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 10 }, boxWidth: 10, padding: 8 } },
-                        tooltip: { callbacks: { label: (c) => ` ${c.label}: ${formatSEK(c.raw)}` } }
-                    },
-                    cutout: '65%'
-                }
-            });
-        }
-
-        function renderPartnerComparisonChart(dataList) {
-            const canvas = document.getElementById('partnerComparisonChart');
-            if (!canvas) return;
-            const ctx = canvas.getContext('2d');
-            const expenses = dataList.filter(t => t.type === 'expense');
-
-            const categoriesUsed = Array.from(new Set(expenses.map(t => t.category)));
-            const labels = categoriesUsed.map(k => {
-                const cat = window.AppState.categories[k] || DEFAULT_CATEGORIES.shopping;
-                return (cat.emoji ? cat.emoji + ' ' : '') + cat.name.split(' / ')[0];
-            });
-            
-            const p1Data = categoriesUsed.map(cat => 
-                expenses.filter(t => t.user === 'p1' && t.category === cat).reduce((a, b) => a + Number(b.amount), 0)
-            );
-            const p2Data = categoriesUsed.map(cat => 
-                expenses.filter(t => t.user === 'p2' && t.category === cat).reduce((a, b) => a + Number(b.amount), 0)
-            );
-
-            if (partnerComparisonChartInstance) partnerComparisonChartInstance.destroy();
-
-            partnerComparisonChartInstance = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [
-                        { label: window.AppState.settings.p1Name, data: p1Data, backgroundColor: '#06b6d4', borderRadius: 4 },
-                        { label: window.AppState.settings.p2Name, data: p2Data, backgroundColor: '#a855f7', borderRadius: 4 }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { position: 'top', align: 'end', labels: { color: '#94a3b8', font: { size: 10 }, boxWidth: 10 } },
-                        tooltip: { callbacks: { label: (c) => ` ${c.dataset.label}: ${formatSEK(c.raw)}` } }
-                    },
-                    scales: {
-                        x: { grid: { display: false }, ticks: { color: '#64748b', font: { size: 9 } } },
-                        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b', font: { size: 9 } } }
-                    }
-                }
-            });
-        }
-
-        function applySearchAndFilters(list) {
-            const search = document.getElementById('familyFilterSearch').value.toLowerCase().trim();
-            const user = document.getElementById('familyFilterUser').value;
-            const category = document.getElementById('familyFilterCategory').value;
-
-            return list.filter(tx => {
-                const matchesSearch = tx.title.toLowerCase().includes(search);
-                const matchesUser = user === 'all' || tx.user === user;
-                const matchesCategory = category === 'all' || tx.category === category;
-                return matchesSearch && matchesUser && matchesCategory;
-            }).sort((a, b) => new Date(b.date) - new Date(a.date));
-        }
-
-        function updatePartnerLabels() {
-            document.getElementById('label-tab-p1').textContent = window.AppState.settings.p1Name;
-            document.getElementById('label-tab-p2').textContent = window.AppState.settings.p2Name;
-            document.getElementById('filter-user-p1').textContent = window.AppState.settings.p1Name;
-            document.getElementById('filter-user-p2').textContent = window.AppState.settings.p2Name;
-            document.getElementById('card-p1-title').textContent = window.AppState.settings.p1Name;
-            document.getElementById('card-p2-title').textContent = window.AppState.settings.p2Name;
-
-            document.getElementById('input-p1-name').value = window.AppState.settings.p1Name;
-            document.getElementById('input-p2-name').value = window.AppState.settings.p2Name;
-        }
-
-        window.openSettingsModal = function() {
-            renderSettingsCategoryList();
-            document.getElementById('settingsModal').classList.remove('hidden');
-        };
-
-        window.closeSettingsModal = function() {
-            document.getElementById('settingsModal').classList.add('hidden');
-        };
-
-        window.savePartnerNames = function() {
-            const p1 = document.getElementById('input-p1-name').value.trim();
-            const p2 = document.getElementById('input-p2-name').value.trim();
-
-            if (p1) window.AppState.settings.p1Name = p1;
-            if (p2) window.AppState.settings.p2Name = p2;
-
-            pushStateToCloud();
-            updatePartnerLabels();
-            closeSettingsModal();
-            renderAll();
-            showToast('Имена обновлены');
-        };
-
-        function renderSettingsCategoryList() {
-            const container = document.getElementById('settingsCategoryList');
-            const cats = window.AppState.categories;
-
-            container.innerHTML = Object.keys(cats).map(k => {
-                const cat = cats[k];
-                const isDefault = !!DEFAULT_CATEGORIES[k];
-
-                return `
-                    <div class="flex items-center justify-between p-2 rounded-xl bg-slate-900 border border-slate-800 text-xs">
-                        <div class="flex items-center gap-2">
-                            <span>${cat.emoji || '🛍️'}</span>
-                            <span class="font-medium text-slate-200">${cat.name}</span>
-                        </div>
-                        ${!isDefault ? `
-                            <button onclick="deleteCategory('${k}')" class="text-slate-500 hover:text-rose-400 p-1">
-                                <i class="fa-solid fa-trash-can text-xs"></i>
-                            </button>
-                        ` : '<span class="text-[9px] text-slate-600">Базовая</span>'}
-                    </div>
-                `;
-            }).join('');
-        }
-
-        window.deleteCategory = function(catKey) {
-            delete window.AppState.categories[catKey];
-            pushStateToCloud();
-            populateCategoryDropdowns();
-            renderSettingsCategoryList();
-            renderAll();
-            showToast('Категория удалена');
-        };
-
-        window.openExportModal = function() {
-            document.getElementById('exportModal').classList.remove('hidden');
-        };
-
-        window.closeExportModal = function() {
-            document.getElementById('exportModal').classList.add('hidden');
-        };
-
-        window.exportDataJSON = function() {
-            const payload = { 
-                settings: window.AppState.settings, 
-                categories: window.AppState.categories,
-                transactions: window.AppState.transactions 
-            };
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(payload, null, 2));
-            const a = document.createElement('a');
-            a.setAttribute("href", dataStr);
-            a.setAttribute("download", `se_family_budget_${new Date().toISOString().split('T')[0]}.json`);
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
-            showToast('Бэкап сохранен');
-        };
-
-        window.importDataJSON = function(event) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const parsed = JSON.parse(e.target.result);
-                    if (parsed.transactions && Array.isArray(parsed.transactions)) {
-                        window.AppState.transactions = parsed.transactions;
-                        if (parsed.settings) window.AppState.settings = parsed.settings;
-                        if (parsed.categories) window.AppState.categories = parsed.categories;
-                        pushStateToCloud();
-                        updatePartnerLabels();
-                        populateCategoryDropdowns();
-                        renderAll();
-                        closeExportModal();
-                        showToast('Бэкап успешно загружен');
-                    }
-                } catch(err) {
-                    showToast('Ошибка при прочтении файла', 'error');
-                }
-            };
-            if (event.target.files[0]) reader.readAsText(event.target.files[0]);
-        };
-
-        function openConfirmModal(title, msg) {
-            document.getElementById('confirmTitle').textContent = title;
-            document.getElementById('confirmMessage').textContent = msg;
-            document.getElementById('confirmModal').classList.remove('hidden');
-        }
-
-        window.closeConfirmModal = function() {
-            document.getElementById('confirmModal').classList.add('hidden');
-            window.AppState.pendingAction = null;
-        };
-
-        window.executeConfirmAction = function() {
-            if (window.AppState.pendingAction) window.AppState.pendingAction();
-            closeConfirmModal();
-        };
-
-        function escapeHtml(str) {
-            return str.replace(/[&<>"']/g, function(m) {
-                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
-            });
-        }
-
-        function showToast(message, type = 'success') {
-            const container = document.getElementById('toastContainer');
-            if (!container) return;
-            const toast = document.createElement('div');
-            
-            const isError = type === 'error';
-            const bgClass = isError ? 'bg-rose-900/90 text-rose-100 border-rose-700' : 'bg-slate-900/90 text-slate-100 border-cyan-500/50';
-            const iconClass = isError ? 'fa-triangle-exclamation text-rose-400' : 'fa-circle-check text-cyan-400';
-
-            toast.className = `flex items-center gap-2.5 px-4 py-3 rounded-xl border backdrop-blur-md shadow-xl text-xs font-semibold transition-all duration-300 transform translate-y-2 opacity-0 ${bgClass}`;
-            toast.innerHTML = `<i class="fa-solid ${iconClass}"></i><span>${message}</span>`;
-
-            container.appendChild(toast);
-            setTimeout(() => toast.classList.remove('translate-y-2', 'opacity-0'), 10);
-            setTimeout(() => {
-                toast.classList.add('opacity-0', 'translate-y-2');
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
-        }
-
-        // Initialize Application Immediately on DOM Ready
-        window.addEventListener('DOMContentLoaded', function() {
-            try {
-                const savedTx = localStorage.getItem('se_family_budget_tx');
-                const savedSet = localStorage.getItem('se_family_budget_settings');
-                const savedCat = localStorage.getItem('se_family_budget_categories');
-
-                if (savedTx) window.AppState.transactions = JSON.parse(savedTx);
-                if (savedSet) window.AppState.settings = JSON.parse(savedSet);
-                if (savedCat) window.AppState.categories = JSON.parse(savedCat);
-            } catch(e) {
-                console.warn('LocalStorage parse warning', e);
-            }
-
-            updatePartnerLabels();
-            populateCategoryDropdowns();
-            renderAll();
-
-            // Background non-blocking sync
-            setTimeout(() => {
-                pullFromCloud(false);
-            }, 500);
-
-            // Periodic quiet background sync every 15 seconds
-            setInterval(() => {
-                pullFromCloud(false);
-            }, 15000);
+        saveState();
+      }
+    }
+
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      renderApp();
+    }
+
+    // Инициализация при старте
+    window.addEventListener('DOMContentLoaded', () => {
+      loadState();
+      document.getElementById('txDate').valueAsDate = new Date();
+      renderApp();
+    });
+
+    function renderApp() {
+      // Обновление заголовков и имен
+      document.getElementById('tabP1').innerText = `👤 ${state.settings.partner1}`;
+      document.getElementById('tabP2').innerText = `👤 ${state.settings.partner2}`;
+
+      // Помесячный переключатель
+      document.getElementById('currentMonthLabel').innerText = `${monthNames[state.currentMonth]} ${state.currentYear}`;
+
+      // Селектор партнера в форме
+      const partnerSelect = document.getElementById('txPartner');
+      partnerSelect.innerHTML = `
+        <option value="p1">${state.settings.partner1}</option>
+        <option value="p2">${state.settings.partner2}</option>
+      `;
+
+      updateCategoryDropdown();
+      renderStatsAndCharts();
+      renderTransactionsList();
+    }
+
+    // Навигация по месяцам
+    function changeMonth(delta) {
+      state.currentMonth += delta;
+      if (state.currentMonth < 0) {
+        state.currentMonth = 11;
+        state.currentYear--;
+      } else if (state.currentMonth > 11) {
+        state.currentMonth = 0;
+        state.currentYear++;
+      }
+      saveState();
+    }
+
+    // Переключение вкладок
+    function switchTab(tab) {
+      state.activeTab = tab;
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      if (tab === 'all') document.getElementById('tabAll').classList.add('active');
+      if (tab === 'p1') document.getElementById('tabP1').classList.add('active');
+      if (tab === 'p2') document.getElementById('tabP2').classList.add('active');
+      renderApp();
+    }
+
+    // Выпадающий список категорий
+    function updateCategoryDropdown() {
+      const type = document.getElementById('txType').value;
+      const catSelect = document.getElementById('txCategory');
+      catSelect.innerHTML = '';
+
+      state.categories
+        .filter(c => c.type === type)
+        .forEach(cat => {
+          const opt = document.createElement('option');
+          opt.value = cat.id;
+          opt.innerText = `${cat.icon} ${cat.name}`;
+          catSelect.appendChild(opt);
         });
-    </script>
+    }
+
+    // Фильтрация транзакций текущего месяца и вкладки
+    function getFilteredTransactions() {
+      return state.transactions.filter(tx => {
+        const d = new Date(tx.date);
+        const matchMonth = d.getFullYear() === state.currentYear && d.getMonth() === state.currentMonth;
+        const matchTab = state.activeTab === 'all' || tx.partner === state.activeTab;
+        return matchMonth && matchTab;
+      });
+    }
+
+    // Расчет статистики и графиков
+    function renderStatsAndCharts() {
+      const list = getFilteredTransactions();
+
+      let income = 0;
+      let expenses = 0;
+
+      const catMap = {};
+      const partnerMap = { p1: 0, p2: 0 };
+
+      list.forEach(tx => {
+        const amt = parseFloat(tx.amount) || 0;
+        if (tx.type === 'income') {
+          income += amt;
+        } else {
+          expenses += amt;
+          catMap[tx.categoryId] = (catMap[tx.categoryId] || 0) + amt;
+          if (tx.partner === 'p1') partnerMap.p1 += amt;
+          if (tx.partner === 'p2') partnerMap.p2 += amt;
+        }
+      });
+
+      const balance = income - expenses;
+      const savingsRate = income > 0 ? Math.max(0, Math.round((balance / income) * 100)) : 0;
+
+      document.getElementById('statIncome').innerText = `${income.toLocaleString('sv-SE')} kr`;
+      document.getElementById('statExpenses').innerText = `${expenses.toLocaleString('sv-SE')} kr`;
+      document.getElementById('statBalance').innerText = `${balance.toLocaleString('sv-SE')} kr`;
+      document.getElementById('statSavings').innerText = `${savingsRate}%`;
+
+      // Построение круговой диаграммы категорий
+      const catLabels = [];
+      const catData = [];
+      Object.keys(catMap).forEach(catId => {
+        const catObj = state.categories.find(c => c.id === catId);
+        catLabels.push(catObj ? `${catObj.icon} ${catObj.name}` : 'Прочее');
+        catData.push(catMap[catId]);
+      });
+
+      if (catChartInstance) catChartInstance.destroy();
+      const ctx1 = document.getElementById('categoryChart').getContext('2d');
+      catChartInstance = new Chart(ctx1, {
+        type: 'doughnut',
+        data: {
+          labels: catLabels.length ? catLabels : ['Нет данных'],
+          datasets: [{
+            data: catData.length ? catData : [1],
+            backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#64748b']
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8' } } }
+        }
+      });
+
+      // Построение столбчатой диаграммы партнеров
+      if (partnerChartInstance) partnerChartInstance.destroy();
+      const ctx2 = document.getElementById('partnerChart').getContext('2d');
+      partnerChartInstance = new Chart(ctx2, {
+        type: 'bar',
+        data: {
+          labels: [state.settings.partner1, state.settings.partner2],
+          datasets: [{
+            label: 'Расходы (kr)',
+            data: [partnerMap.p1, partnerMap.p2],
+            backgroundColor: ['#3b82f6', '#ec4899']
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } },
+            x: { ticks: { color: '#94a3b8' }, grid: { display: false } }
+          },
+          plugins: { legend: { display: false } }
+        }
+      });
+    }
+
+    // Отрисовка списка транзакций
+    function renderTransactionsList() {
+      const container = document.getElementById('txListContainer');
+      const list = getFilteredTransactions().sort((a,b) => new Date(b.date) - new Date(a.date));
+
+      if (list.length === 0) {
+        container.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 20px;">Нет операций за этот месяц</div>`;
+        return;
+      }
+
+      container.innerHTML = list.map(tx => {
+        const cat = state.categories.find(c => c.id === tx.categoryId) || { icon: '📦', name: 'Прочее' };
+        const partnerName = tx.partner === 'p1' ? state.settings.partner1 : state.settings.partner2;
+        const badgeClass = tx.partner === 'p1' ? 'badge-p1' : 'badge-p2';
+        const amountSign = tx.type === 'income' ? '+' : '-';
+        const amountColor = tx.type === 'income' ? 'var(--success)' : 'var(--text-main)';
+
+        return `
+          <div class="tx-item">
+            <div class="tx-left">
+              <div class="tx-icon">${cat.icon}</div>
+              <div class="tx-details">
+                <div class="tx-title">${cat.name} ${tx.note ? `<span style="font-weight:400; font-size:0.85rem; color:var(--text-muted);">(${tx.note})</span>` : ''}</div>
+                <div class="tx-meta">
+                  <span>${tx.date}</span> • 
+                  <span class="badge ${badgeClass}">${partnerName}</span>
+                  ${tx.isRecurring ? `<span class="badge badge-recurring">🔄 Постоянный</span>` : ''}
+                </div>
+              </div>
+            </div>
+            <div style="display: flex; align-items: center;">
+              <div class="tx-amount" style="color: ${amountColor};">
+                ${amountSign}${parseFloat(tx.amount).toLocaleString('sv-SE')} kr
+              </div>
+              <button class="tx-delete" onclick="deleteTransaction('${tx.id}')">✕</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Обработка создания операции
+    function handleFormSubmit(e) {
+      e.preventDefault();
+      const amount = parseFloat(document.getElementById('txAmount').value);
+      if (!amount) return;
+
+      const newTx = {
+        id: Date.now().toString(),
+        type: document.getElementById('txType').value,
+        amount: amount,
+        partner: document.getElementById('txPartner').value,
+        categoryId: document.getElementById('txCategory').value,
+        date: document.getElementById('txDate').value,
+        note: document.getElementById('txNote').value,
+        isRecurring: document.getElementById('txRecurring').checked
+      };
+
+      state.transactions.push(newTx);
+      saveState();
+
+      document.getElementById('txAmount').value = '';
+      document.getElementById('txNote').value = '';
+      document.getElementById('txRecurring').checked = false;
+    }
+
+    function deleteTransaction(id) {
+      state.transactions = state.transactions.filter(t => t.id !== id);
+      saveState();
+    }
+
+    // Перенос регулярных платежей
+    function copyRecurringPayments() {
+      // Ищем уникальные постоянные платежи из прошлых записей
+      const recurringTxs = state.transactions.filter(t => t.isRecurring);
+
+      if (recurringTxs.length === 0) {
+        alert('У вас пока нет отмеченных постоянных платежей!');
+        return;
+      }
+
+      let copiedCount = 0;
+      const targetMonthStr = `${state.currentYear}-${String(state.currentMonth + 1).padStart(2, '0')}`;
+
+      recurringTxs.forEach(rec => {
+        // Проверяем, существует ли уже такая операция в текущем месяце
+        const exists = state.transactions.some(t => {
+          const tMonth = t.date.substring(0, 7);
+          return tMonth === targetMonthStr && 
+                 t.categoryId === rec.categoryId && 
+                 t.amount === rec.amount && 
+                 t.partner === rec.partner;
+        });
+
+        if (!exists) {
+          state.transactions.push({
+            ...rec,
+            id: Date.now().toString() + Math.random().toString(36).substr(2, 4),
+            date: `${targetMonthStr}-01`
+          });
+          copiedCount++;
+        }
+      });
+
+      saveState();
+      alert(`Успешно перенесено постоянных платежей: ${copiedCount}`);
+    }
+
+    // Создание кастомной категории
+    function handleCreateCategory(e) {
+      e.preventDefault();
+      const name = document.getElementById('catName').value;
+      const type = document.getElementById('catType').value;
+      const icon = document.getElementById('catIcon').value || '🏷️';
+
+      const newCat = {
+        id: 'cat_' + Date.now(),
+        name: name,
+        type: type,
+        icon: icon
+      };
+
+      state.categories.push(newCat);
+      saveState();
+      closeModal('newCatModal');
+      document.getElementById('catName').value = '';
+    }
+
+    // Настройки имен
+    function handleSaveSettings(e) {
+      e.preventDefault();
+      state.settings.partner1 = document.getElementById('setP1').value;
+      state.settings.partner2 = document.getElementById('setP2').value;
+      saveState();
+      closeModal('settingsModal');
+    }
+
+    // Управление модальными окнами
+    function openModal(id) {
+      if (id === 'settingsModal') {
+        document.getElementById('setP1').value = state.settings.partner1;
+        document.getElementById('setP2').value = state.settings.partner2;
+      }
+      document.getElementById(id).style.display = 'flex';
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).style.display = 'none';
+    }
+
+    // Экспорт / Импорт JSON
+    function exportData() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `FamiljBudget_Backup_${new Date().toISOString().slice(0,10)}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    }
+
+    function importData(e) {
+      const fileReader = new FileReader();
+      fileReader.onload = function(event) {
+        try {
+          const importedState = JSON.parse(event.target.result);
+          if (importedState.transactions && importedState.categories) {
+            state = importedState;
+            saveState();
+            closeModal('backupModal');
+            alert('Данные успешно импортированы!');
+          }
+        } catch(err) {
+          alert('Ошибка чтения файла!');
+        }
+      };
+      fileReader.readAsText(e.target.files[0]);
+    }
+  </script>
 </body>
 </html>
