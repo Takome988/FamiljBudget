@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Семейный Бюджет | Швеция (SEK)</title>
+    <title>Семейный Бюджет | Швеция (SEK / kr)</title>
+    
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -21,10 +22,19 @@
             }
         }
     </script>
+
+    <!-- FontAwesome CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <!-- Lucide Icons CDN -->
     <script src="https://unpkg.com/lucide@latest"></script>
+    
     <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- GunDB P2P Realtime Storage CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
+
     <style>
         ::-webkit-scrollbar {
             width: 6px;
@@ -41,158 +51,153 @@
             background: #334155;
         }
         .glass-card {
-            background: rgba(26, 36, 56, 0.75);
-            backdrop-filter: blur(14px);
-            border: 1px solid rgba(255, 255, 255, 0.07);
+            background: rgba(26, 36, 56, 0.8);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .glass-card-hover:hover {
+            border-color: rgba(6, 182, 212, 0.3);
+            box-shadow: 0 8px 24px -4px rgba(6, 182, 212, 0.1);
         }
     </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased selection:bg-cyan-500 selection:text-slate-950">
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased selection:bg-cyan-500 selection:text-slate-950 pb-12">
 
     <div id="app" class="max-w-7xl mx-auto p-3 sm:p-6 space-y-6">
 
-        <!-- HEADER -->
+        <!-- HEADER SECTION -->
         <header class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 glass-card p-4 sm:p-5 rounded-2xl shadow-2xl">
             <div class="flex items-center gap-3">
                 <div class="p-3 bg-gradient-to-tr from-cyan-500 to-blue-600 rounded-xl text-slate-950 font-bold shadow-lg shadow-cyan-500/20">
-                    <i data-lucide="home" class="w-7 h-7"></i>
+                    <i class="fa-solid fa-house-chimney text-xl"></i>
                 </div>
                 <div>
                     <div class="flex items-center gap-2">
                         <h1 class="text-xl sm:text-2xl font-black tracking-tight bg-gradient-to-r from-white via-slate-200 to-cyan-200 bg-clip-text text-transparent">
-                            Семейный Бюджет <span class="text-cyan-400 font-semibold text-base sm:text-lg ml-1">(SEK)</span>
+                            Familj Budget <span class="text-cyan-400 font-semibold text-sm sm:text-base ml-1">(SEK / kr)</span>
                         </h1>
                     </div>
-                    <p class="text-xs text-slate-400 font-medium flex items-center gap-1 mt-0.5">
-                        <span>Учет расходов пары • Швеция 🇸🇪</span>
-                        <span id="syncStatusBadge" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                            <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span> Локально
+                    <p class="text-xs text-slate-400 font-medium flex items-center gap-2 mt-0.5">
+                        <span>Учет трат семьи • Швеция 🇸🇪</span>
+                        <span id="syncStatusBadge" class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                            <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span> Локальный режим
                         </span>
                     </p>
                 </div>
             </div>
 
-            <!-- MONTH NAVIGATOR -->
             <div class="flex items-center justify-center gap-2 bg-slate-900/90 p-1.5 rounded-xl border border-slate-800 shadow-inner">
-                <button onclick="prevMonth()" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-all active:scale-95">
-                    <i data-lucide="chevron-left" class="w-4 h-4"></i>
+                <button onclick="prevMonth()" title="Предыдущий месяц" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-all active:scale-95">
+                    <i class="fa-solid fa-chevron-left text-xs"></i>
                 </button>
-                <div class="text-center px-3 min-w-[140px]">
+                <div class="text-center px-3 min-w-[150px]">
                     <span id="currentMonthLabel" class="text-xs font-black uppercase tracking-wider text-cyan-400 block">Сентябрь 2026</span>
                     <span class="text-[10px] text-slate-400">Выбранный период</span>
                 </div>
-                <button onclick="nextMonth()" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-all active:scale-95">
-                    <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                <button onclick="nextMonth()" title="Следующий месяц" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-all active:scale-95">
+                    <i class="fa-solid fa-chevron-right text-xs"></i>
                 </button>
             </div>
 
-            <!-- TOP ACTION BUTTONS -->
             <div class="flex flex-wrap items-center gap-2">
-                <button onclick="copyRecurringPaymentsToCurrentMonth()" class="flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-xl bg-purple-500/15 hover:bg-purple-500/25 text-purple-300 border border-purple-500/30 active:scale-95 transition-all">
-                    <i data-lucide="copy" class="w-4 h-4 text-purple-400"></i>
+                <button onclick="copyRecurringPaymentsToCurrentMonth()" class="flex items-center gap-2 px-3 py-2 text-xs font-bold rounded-xl bg-purple-500/15 hover:bg-purple-500/25 text-purple-300 border border-purple-500/30 active:scale-95 transition-all">
+                    <i class="fa-solid fa-copy text-purple-400"></i>
                     <span>📋 Перенести регулярные</span>
                 </button>
-                <button onclick="openRoomModal()" class="flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 active:scale-95 transition-all">
-                    <i data-lucide="wifi" class="w-4 h-4"></i>
-                    <span>Код семьи: <strong id="headerRoomCodeDisplay" class="underline">demo-room</strong></span>
+                <button onclick="openRoomModal()" class="flex items-center gap-2 px-3 py-2 text-xs font-bold rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 active:scale-95 transition-all">
+                    <i class="fa-solid fa-wifi"></i>
+                    <span>Код семьи: <strong id="headerRoomCodeDisplay" class="underline">demo-family</strong></span>
                 </button>
-                <button onclick="openSettingsModal()" class="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700/60 active:scale-95 transition-all">
-                    <i data-lucide="settings" class="w-4 h-4 text-amber-400"></i>
+                <button onclick="openSettingsModal()" class="flex items-center gap-2 px-3 py-2 text-xs font-semibold rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 active:scale-95 transition-all">
+                    <i class="fa-solid fa-gear text-amber-400"></i>
                     <span>Настройки</span>
                 </button>
-                <button onclick="openExportModal()" class="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700/60 active:scale-95 transition-all">
-                    <i data-lucide="download-cloud" class="w-4 h-4 text-emerald-400"></i>
+                <button onclick="openExportModal()" class="flex items-center gap-2 px-3 py-2 text-xs font-semibold rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 active:scale-95 transition-all">
+                    <i class="fa-solid fa-database text-emerald-400"></i>
                     <span>Бэкап</span>
                 </button>
             </div>
         </header>
 
-        <!-- NAVIGATION TABS -->
         <nav class="flex p-1.5 bg-slate-900/90 rounded-2xl border border-slate-800 gap-1.5 shadow-inner overflow-x-auto">
             <button id="tab-family" onclick="switchTab('family')" 
-                class="flex-1 min-w-[160px] py-3 px-4 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all duration-200 bg-cyan-500 text-slate-950 shadow-lg shadow-cyan-500/20">
-                <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
-                <span>🏠 Общий семейный бюджет</span>
+                class="flex-1 min-w-[170px] py-3 px-4 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all duration-200 bg-cyan-500 text-slate-950 shadow-lg shadow-cyan-500/20">
+                <i class="fa-solid fa-chart-pie"></i>
+                <span>🏠 Общий бюджет</span>
             </button>
             <button id="tab-p1" onclick="switchTab('p1')" 
                 class="flex-1 min-w-[140px] py-3 px-4 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all duration-200 text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
-                <i data-lucide="user" class="w-4 h-4 text-cyan-400"></i>
+                <i class="fa-solid fa-user text-cyan-400"></i>
                 <span id="label-tab-p1">Антон</span>
             </button>
             <button id="tab-p2" onclick="switchTab('p2')" 
                 class="flex-1 min-w-[140px] py-3 px-4 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all duration-200 text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
-                <i data-lucide="user-check" class="w-4 h-4 text-purple-400"></i>
+                <i class="fa-solid fa-user-gear text-purple-400"></i>
                 <span id="label-tab-p2">Мария</span>
             </button>
         </nav>
 
-        <!-- VIEW 1: FAMILY DASHBOARD VIEW -->
         <div id="view-family" class="space-y-6">
             
-            <!-- Summary Stats Cards -->
+            <!-- Summary Stat Cards -->
             <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <!-- Total Family Income -->
                 <div class="glass-card p-5 rounded-2xl border-l-4 border-l-emerald-500 flex items-center justify-between">
                     <div>
                         <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Общий доход семьи</p>
                         <h3 id="family-stat-income" class="text-2xl font-black text-emerald-400 tracking-tight mt-1">0 kr</h3>
                         <p class="text-[11px] text-slate-400 mt-1 flex items-center gap-1">
-                            <i data-lucide="trending-up" class="w-3.5 h-3.5 text-emerald-400"></i>
+                            <i class="fa-solid fa-arrow-trend-up text-emerald-400"></i>
                             <span>Суммарно оба партнера</span>
                         </p>
                     </div>
                     <div class="p-3 bg-emerald-500/10 rounded-xl text-emerald-400">
-                        <i data-lucide="arrow-down-left" class="w-6 h-6"></i>
+                        <i class="fa-solid fa-wallet text-xl"></i>
                     </div>
                 </div>
 
-                <!-- Total Family Expenses -->
                 <div class="glass-card p-5 rounded-2xl border-l-4 border-l-rose-500 flex items-center justify-between">
                     <div>
                         <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Общий расход семьи</p>
                         <h3 id="family-stat-expenses" class="text-2xl font-black text-rose-400 tracking-tight mt-1">0 kr</h3>
                         <p class="text-[11px] text-slate-400 mt-1 flex items-center gap-1">
-                            <i data-lucide="trending-down" class="w-3.5 h-3.5 text-rose-400"></i>
+                            <i class="fa-solid fa-arrow-trend-down text-rose-400"></i>
                             <span>Все семейные траты</span>
                         </p>
                     </div>
                     <div class="p-3 bg-rose-500/10 rounded-xl text-rose-400">
-                        <i data-lucide="arrow-up-right" class="w-6 h-6"></i>
+                        <i class="fa-solid fa-receipt text-xl"></i>
                     </div>
                 </div>
 
-                <!-- Net Family Balance -->
                 <div class="glass-card p-5 rounded-2xl border-l-4 border-l-cyan-500 flex items-center justify-between">
                     <div>
                         <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Остаток за месяц</p>
                         <h3 id="family-stat-balance" class="text-2xl font-black text-slate-100 tracking-tight mt-1">0 kr</h3>
                         <p class="text-[11px] text-slate-400 mt-1 flex items-center gap-1">
-                            <i data-lucide="scale" class="w-3.5 h-3.5 text-cyan-400"></i>
+                            <i class="fa-solid fa-scale-balanced text-cyan-400"></i>
                             <span>Чистый баланс периода</span>
                         </p>
                     </div>
                     <div class="p-3 bg-cyan-500/10 rounded-xl text-cyan-400">
-                        <i data-lucide="wallet" class="w-6 h-6"></i>
+                        <i class="fa-solid fa-coins text-xl"></i>
                     </div>
                 </div>
 
-                <!-- Savings Rate (Spargrad %) -->
                 <div class="glass-card p-5 rounded-2xl border-l-4 border-l-amber-500 flex items-center justify-between">
                     <div>
-                        <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Норма сбережений (Spargrad)</p>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Spargrad (Сбережения)</p>
                         <h3 id="family-stat-savings-rate" class="text-2xl font-black text-amber-400 tracking-tight mt-1">0%</h3>
                         <p class="text-[11px] text-slate-400 mt-1 flex items-center gap-1">
-                            <i data-lucide="piggy-bank" class="w-3.5 h-3.5 text-amber-400"></i>
+                            <i class="fa-solid fa-piggy-bank text-amber-400"></i>
                             <span>Доля сохраненного бюджета</span>
                         </p>
                     </div>
                     <div class="p-3 bg-amber-500/10 rounded-xl text-amber-400">
-                        <i data-lucide="percent" class="w-6 h-6"></i>
+                        <i class="fa-solid fa-percent text-xl"></i>
                     </div>
                 </div>
             </section>
 
-            <!-- Partner Breakdown Contribution Strip -->
             <section class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div class="glass-card p-4 rounded-2xl border border-cyan-500/20 flex items-center justify-between">
                     <div class="flex items-center gap-3">
@@ -225,14 +230,12 @@
                 </div>
             </section>
 
-            <!-- Family Charts Section -->
             <section class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                <!-- Doughnut Chart: Family Expense Categories -->
                 <div class="lg:col-span-5 glass-card p-5 rounded-2xl flex flex-col justify-between">
                     <div class="flex items-center justify-between mb-2">
                         <h2 class="font-bold text-slate-200 text-sm flex items-center gap-2">
-                            <i data-lucide="pie-chart" class="w-4 h-4 text-cyan-400"></i>
-                            Расходы семьи по категориям
+                            <i class="fa-solid fa-chart-pie text-cyan-400"></i>
+                            Расходы по категориям
                         </h2>
                     </div>
                     <div class="relative min-h-[250px] flex items-center justify-center my-auto">
@@ -240,11 +243,10 @@
                     </div>
                 </div>
 
-                <!-- Grouped Bar Chart: Partner 1 vs Partner 2 Comparison -->
                 <div class="lg:col-span-7 glass-card p-5 rounded-2xl flex flex-col justify-between">
                     <div class="flex items-center justify-between mb-2">
                         <h2 class="font-bold text-slate-200 text-sm flex items-center gap-2">
-                            <i data-lucide="bar-chart-2" class="w-4 h-4 text-purple-400"></i>
+                            <i class="fa-solid fa-chart-column text-purple-400"></i>
                             Сравнение трат партнеров по категориям
                         </h2>
                     </div>
@@ -254,19 +256,17 @@
                 </div>
             </section>
 
-            <!-- Unified Family Transactions Feed -->
             <section class="glass-card p-5 rounded-2xl space-y-4">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
                     <div class="flex items-center gap-2">
-                        <i data-lucide="list" class="w-5 h-5 text-cyan-400"></i>
+                        <i class="fa-solid fa-list-ul text-cyan-400"></i>
                         <h2 class="font-bold text-slate-200">Общий список транзакций периода</h2>
                         <span id="family-count-badge" class="px-2 py-0.5 text-xs bg-slate-800 text-slate-400 rounded-full border border-slate-700">0</span>
                     </div>
 
-                    <!-- Filters -->
                     <div class="flex flex-wrap items-center gap-2">
                         <div class="relative flex-1 sm:w-40">
-                            <i data-lucide="search" class="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"></i>
+                            <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
                             <input type="text" id="familyFilterSearch" oninput="renderAll()" placeholder="Поиск..." 
                                 class="w-full pl-8 pr-3 py-1.5 bg-slate-900 border border-slate-700/80 rounded-xl text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-500">
                         </div>
@@ -291,10 +291,8 @@
             </section>
         </div>
 
-        <!-- VIEW 2 & 3: PERSONAL PARTNER VIEWS -->
         <div id="view-personal" class="space-y-6 hidden">
             
-            <!-- Personal Summary Banner -->
             <section class="glass-card p-5 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 border-t-4" id="personal-banner-border">
                 <div class="flex items-center gap-3">
                     <div id="personal-avatar" class="w-12 h-12 rounded-xl flex items-center justify-center font-bold text-lg">
@@ -324,14 +322,11 @@
                 </div>
             </section>
 
-            <!-- Form & Personal Transactions Grid -->
             <section class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                
-                <!-- Add/Edit Transaction Form -->
                 <div class="lg:col-span-5 glass-card p-5 rounded-2xl space-y-4 h-fit">
                     <div class="flex items-center justify-between pb-3 border-b border-slate-800">
                         <div class="flex items-center gap-2">
-                            <i data-lucide="plus-circle" class="w-5 h-5 text-cyan-400"></i>
+                            <i class="fa-solid fa-circle-plus text-cyan-400"></i>
                             <h3 id="form-title" class="font-bold text-slate-200">Добавить операцию</h3>
                         </div>
                         <span id="activeUserFormBadge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
@@ -340,22 +335,20 @@
                     </div>
 
                     <form id="transactionForm" onsubmit="handleFormSubmit(event)" class="space-y-4">
-                        <!-- Type selector -->
                         <div>
                             <label class="block text-xs font-semibold text-slate-400 mb-1.5">Тип операции</label>
                             <div class="grid grid-cols-2 gap-2">
                                 <button type="button" id="btn-type-expense" onclick="setFormType('expense')" 
                                     class="py-2 px-3 text-xs font-bold rounded-xl border flex items-center justify-center gap-2 transition-all bg-rose-500/20 text-rose-300 border-rose-500/50">
-                                    <i data-lucide="arrow-up-right" class="w-4 h-4"></i> Расход
+                                    <i class="fa-solid fa-arrow-up-right-from-square"></i> Расход
                                 </button>
                                 <button type="button" id="btn-type-income" onclick="setFormType('income')" 
                                     class="py-2 px-3 text-xs font-bold rounded-xl border flex items-center justify-center gap-2 transition-all bg-slate-800/80 text-slate-400 border-slate-700 hover:bg-slate-700">
-                                    <i data-lucide="arrow-down-left" class="w-4 h-4"></i> Доход
+                                    <i class="fa-solid fa-arrow-down-left-and-arrow-up-right-to-center"></i> Доход
                                 </button>
                             </div>
                         </div>
 
-                        <!-- Amount in SEK -->
                         <div>
                             <label for="txAmount" class="block text-xs font-semibold text-slate-400 mb-1">Сумма в кронах (SEK / kr)</label>
                             <div class="relative">
@@ -365,56 +358,51 @@
                             </div>
                         </div>
 
-                        <!-- Description/Store -->
                         <div>
                             <label for="txTitle" class="block text-xs font-semibold text-slate-400 mb-1">Магазин / Назначение</label>
                             <input type="text" id="txTitle" required placeholder="например: ICA Maxi, Willys, Hyra, SL" 
                                 class="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700/80 rounded-xl text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-cyan-500">
                         </div>
 
-                        <!-- Category Selection with Inline "+ Новая" button -->
                         <div>
                             <div class="flex items-center justify-between mb-1">
                                 <label for="txCategory" class="block text-xs font-semibold text-slate-400">Категория</label>
                                 <button type="button" onclick="openNewCategoryModal()" class="text-[11px] font-bold text-cyan-400 hover:text-cyan-300 flex items-center gap-1 transition-colors">
-                                    <i data-lucide="folder-plus" class="w-3.5 h-3.5"></i>
+                                    <i class="fa-solid fa-folder-plus text-xs"></i>
                                     <span>+ Новая категория</span>
                                 </button>
                             </div>
                             <div class="flex gap-2">
                                 <select id="txCategory" required onchange="handleCategorySelectChange(this.value)"
                                     class="w-full px-3 py-2.5 bg-slate-900 border border-slate-700/80 rounded-xl text-xs text-slate-100 focus:outline-none focus:border-cyan-500">
-                                    <!-- Dynamic options populated by JS -->
+                                    <!-- Options populated dynamically -->
                                 </select>
                                 <button type="button" onclick="openNewCategoryModal()" title="Добавить новую категорию" 
                                     class="px-3 py-2.5 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 rounded-xl text-xs font-bold flex items-center gap-1 active:scale-95 transition-all flex-shrink-0">
-                                    <i data-lucide="plus" class="w-4 h-4"></i>
+                                    <i class="fa-solid fa-plus"></i>
                                     <span class="hidden sm:inline">Новая</span>
                                 </button>
                             </div>
                         </div>
 
-                        <!-- Date -->
                         <div>
                             <label for="txDate" class="block text-xs font-semibold text-slate-400 mb-1">Дата</label>
                             <input type="date" id="txDate" required 
                                 class="w-full px-3 py-2 bg-slate-900 border border-slate-700/80 rounded-xl text-xs text-slate-100 focus:outline-none focus:border-cyan-500">
                         </div>
 
-                        <!-- RECURRING PAYMENT CHECKBOX -->
                         <div class="p-3 bg-slate-900/90 rounded-xl border border-slate-800 flex items-center gap-3 cursor-pointer">
                             <input type="checkbox" id="txIsRecurring" class="w-4 h-4 accent-purple-500 rounded cursor-pointer">
-                            <label for="txIsRecurring" class="text-xs font-bold text-slate-200 cursor-pointer flex items-center gap-1.5 select-none">
-                                <i data-lucide="refresh-cw" class="w-3.5 h-3.5 text-purple-400"></i>
+                            <label for="txIsRecurring" class="text-xs font-bold text-slate-200 cursor-pointer flex items-center gap-2 select-none">
+                                <i class="fa-solid fa-arrows-rotate text-purple-400 text-xs"></i>
                                 <span>Постоянный платеж (каждый месяц)</span>
                             </label>
                         </div>
 
-                        <!-- Submit Buttons -->
                         <div class="flex gap-2 pt-2">
                             <button type="submit" id="btn-submit-tx" 
                                 class="flex-1 py-2.5 px-4 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-cyan-500/20 active:scale-95 transition-all flex items-center justify-center gap-2">
-                                <i data-lucide="check" class="w-4 h-4"></i>
+                                <i class="fa-solid fa-check"></i>
                                 <span>Сохранить запись</span>
                             </button>
                             <button type="button" id="btn-cancel-edit" onclick="cancelEdit()" style="display: none;" 
@@ -425,12 +413,11 @@
                     </form>
                 </div>
 
-                <!-- Personal Transactions Log -->
                 <div class="lg:col-span-7 glass-card p-5 rounded-2xl space-y-4 flex flex-col justify-between">
                     <div>
                         <div class="flex items-center justify-between pb-3 border-b border-slate-800">
                             <h3 class="font-bold text-slate-200 text-sm flex items-center gap-2">
-                                <i data-lucide="history" class="w-4 h-4 text-cyan-400"></i>
+                                <i class="fa-solid fa-clock-rotate-left text-cyan-400"></i>
                                 Личные транзакции
                             </h3>
                             <span id="personal-count-badge" class="px-2 py-0.5 text-xs bg-slate-800 text-slate-400 rounded-full border border-slate-700">0</span>
@@ -441,23 +428,21 @@
                         </div>
                     </div>
                 </div>
-
             </section>
         </div>
 
     </div>
 
-    <!-- MODALS -->
 
-    <!-- Quick Inline New Category Modal -->
+    <!-- New Category Modal -->
     <div id="newCategoryModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="glass-card max-w-md w-full p-6 rounded-2xl space-y-4 border border-cyan-500/30 shadow-2xl">
             <div class="flex justify-between items-center pb-2 border-b border-slate-800">
                 <h3 class="font-bold text-lg text-slate-100 flex items-center gap-2">
-                    <i data-lucide="folder-plus" class="w-5 h-5 text-cyan-400"></i> Создать новую категорию
+                    <i class="fa-solid fa-folder-plus text-cyan-400"></i> Создать категорию
                 </h3>
                 <button onclick="closeNewCategoryModal()" class="text-slate-400 hover:text-slate-200">
-                    <i data-lucide="x" class="w-5 h-5"></i>
+                    <i class="fa-solid fa-xmark"></i>
                 </button>
             </div>
             
@@ -494,40 +479,40 @@
                         Отмена
                     </button>
                     <button type="submit" class="flex-1 py-2.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-cyan-500/20 transition-all">
-                        Сохранить и выбрать
+                        Сохранить
                     </button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- Family Room Code Sync Modal -->
+    <!-- Family Room Code Modal -->
     <div id="roomModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="glass-card max-w-md w-full p-6 rounded-2xl space-y-4 border border-cyan-500/40 shadow-2xl">
             <div class="flex justify-between items-center pb-2 border-b border-slate-800">
                 <h3 class="font-bold text-lg text-slate-100 flex items-center gap-2">
-                    <i data-lucide="wifi" class="w-5 h-5 text-cyan-400"></i> Код семьи (Синхронизация)
+                    <i class="fa-solid fa-wifi text-cyan-400"></i> Облачная синхронизация
                 </h3>
                 <button onclick="closeRoomModal()" class="text-slate-400 hover:text-slate-200">
-                    <i data-lucide="x" class="w-5 h-5"></i>
+                    <i class="fa-solid fa-xmark"></i>
                 </button>
             </div>
             
             <p class="text-xs text-slate-400 leading-relaxed">
-                Введите одинаковый **Код семьи** на вашем компьютере и телефоне вашей жены. Все транзакции и новые категории будут обновляться автоматически на обоих экранах!
+                Введите одинаковый **Код семьи** на вашем компьютере и телефоне вашей супруги. Приложение моментально установит прямое соединение и будет обновлять расходы в реальном времени!
             </p>
 
             <div class="space-y-3">
                 <div>
                     <label for="inputRoomCode" class="block text-xs font-semibold text-slate-400 mb-1">Секретный код семьи</label>
-                    <input type="text" id="inputRoomCode" placeholder="например: umea-2026" 
+                    <input type="text" id="inputRoomCode" placeholder="например: swe-family-2026" 
                         class="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-sm font-bold text-cyan-400 placeholder-slate-600 focus:outline-none focus:border-cyan-500">
                 </div>
             </div>
 
             <div class="flex gap-2 pt-2">
                 <button onclick="saveRoomCode()" class="w-full py-2.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs rounded-xl shadow-lg transition-all">
-                    Подключиться и синхронизировать
+                    Подключиться к облаку GunDB
                 </button>
             </div>
         </div>
@@ -538,14 +523,13 @@
         <div class="glass-card max-w-md w-full p-6 rounded-2xl space-y-5 border border-slate-700 shadow-2xl max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center pb-2 border-b border-slate-800">
                 <h3 class="font-bold text-lg text-slate-100 flex items-center gap-2">
-                    <i data-lucide="settings" class="w-5 h-5 text-amber-400"></i> Настройки и категории
+                    <i class="fa-solid fa-gear text-amber-400"></i> Настройки и категории
                 </h3>
                 <button onclick="closeSettingsModal()" class="text-slate-400 hover:text-slate-200">
-                    <i data-lucide="x" class="w-5 h-5"></i>
+                    <i class="fa-solid fa-xmark"></i>
                 </button>
             </div>
             
-            <!-- Partner names -->
             <div class="space-y-3">
                 <h4 class="text-xs font-bold text-cyan-400 uppercase tracking-wider">Имена членов семьи</h4>
                 <div>
@@ -561,7 +545,6 @@
                 </button>
             </div>
 
-            <!-- Category Manager List -->
             <div class="space-y-3 pt-3 border-t border-slate-800">
                 <div class="flex items-center justify-between">
                     <h4 class="text-xs font-bold text-purple-400 uppercase tracking-wider">Управление категориями</h4>
@@ -577,15 +560,15 @@
         </div>
     </div>
 
-    <!-- Export / Import Modal -->
+    <!-- Export Modal -->
     <div id="exportModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="glass-card max-w-md w-full p-6 rounded-2xl space-y-4 border border-slate-700 shadow-2xl">
             <div class="flex justify-between items-center pb-2 border-b border-slate-800">
                 <h3 class="font-bold text-lg text-slate-100 flex items-center gap-2">
-                    <i data-lucide="database" class="w-5 h-5 text-emerald-400"></i> Резервное копирование
+                    <i class="fa-solid fa-database text-emerald-400"></i> Резервное копирование
                 </h3>
                 <button onclick="closeExportModal()" class="text-slate-400 hover:text-slate-200">
-                    <i data-lucide="x" class="w-5 h-5"></i>
+                    <i class="fa-solid fa-xmark"></i>
                 </button>
             </div>
             
@@ -595,22 +578,22 @@
 
             <div class="space-y-3 pt-2">
                 <button onclick="exportDataJSON()" class="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs rounded-xl flex items-center justify-center gap-2 transition-all">
-                    <i data-lucide="download" class="w-4 h-4"></i> Скачать JSON бэкап
+                    <i class="fa-solid fa-download"></i> Скачать JSON бэкап
                 </button>
                 
                 <label class="w-full py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs rounded-xl flex items-center justify-center gap-2 cursor-pointer border border-slate-700 transition-all">
-                    <i data-lucide="upload" class="w-4 h-4 text-cyan-400"></i> Загрузить JSON
+                    <i class="fa-solid fa-upload text-cyan-400"></i> Загрузить JSON
                     <input type="file" id="importFile" accept=".json" onchange="importDataJSON(event)" class="hidden">
                 </label>
             </div>
         </div>
     </div>
 
-    <!-- Confirmation Modal -->
+    <!-- Confirm Modal -->
     <div id="confirmModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="glass-card max-w-sm w-full p-6 rounded-2xl space-y-4 border border-slate-700 text-center">
             <div class="w-12 h-12 bg-rose-500/10 text-rose-400 rounded-full flex items-center justify-center mx-auto">
-                <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+                <i class="fa-solid fa-triangle-exclamation text-xl"></i>
             </div>
             <h3 id="confirmTitle" class="font-bold text-lg text-slate-100">Подтверждение</h3>
             <p id="confirmMessage" class="text-xs text-slate-400">Вы уверены?</p>
@@ -625,50 +608,27 @@
         </div>
     </div>
 
-    <!-- Toast Notification Container -->
     <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
-    <!-- FIREBASE MODULE & APPLICATION LOGIC -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // APP CONSTANTS & FIREBASE CONFIG
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'swedish-family-budget-app';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
-            apiKey: "demo-api-key",
-            authDomain: "demo-app.firebaseapp.com",
-            projectId: "demo-app",
-            storageBucket: "demo-app.appspot.com",
-            messagingSenderId: "123456789",
-            appId: "1:123456789:web:abcdef123456"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-
-        // DEFAULT CATEGORIES
+    <script>
         const DEFAULT_CATEGORIES = {
             salary: { name: 'Lön / Зарплата', color: '#10b981', icon: 'wallet', type: 'income', emoji: '💰' },
             barnbidrag: { name: 'Barnbidrag / Пособие', color: '#06b6d4', icon: 'baby', type: 'income', emoji: '👶' },
-            other_inc: { name: 'Övrigt / Прочий доход', color: '#3b82f6', icon: 'arrow-down-circle', type: 'income', emoji: '💵' },
+            other_inc: { name: 'Övrigt / Прочий доход', color: '#3b82f6', icon: 'coins', type: 'income', emoji: '💵' },
             
-            housing: { name: 'Boende / Жилье (Hyra)', color: '#6366f1', icon: 'home', type: 'expense', emoji: '🏠' },
-            products: { name: 'Mat (ICA, Willys, Coop)', color: '#f59e0b', icon: 'shopping-cart', type: 'expense', emoji: '🛒' },
-            transport: { name: 'Transport (SL, Drivmedel)', color: '#3b82f6', icon: 'car', type: 'expense', emoji: '🚗' },
-            utility: { name: 'El & Bredband / Коммуналка', color: '#eab308', icon: 'zap', type: 'expense', emoji: '⚡' },
-            insurance: { name: 'Försäkringar (Folksam)', color: '#f43f5e', icon: 'shield-check', type: 'expense', emoji: '🛡️' },
-            kids: { name: 'Barn & Skola / Дети', color: '#ec4899', icon: 'smile', type: 'expense', emoji: '🧸' },
-            fika: { name: 'Mat ute & Nöjen (Fika)', color: '#a855f7', icon: 'coffee', type: 'expense', emoji: '☕' },
-            savings: { name: 'Sparande / ISK', color: '#14b8a6', icon: 'trending-up', type: 'expense', emoji: '📈' },
-            shopping: { name: 'Shopping & Övrigt', color: '#64748b', icon: 'shopping-bag', type: 'expense', emoji: '🛍️' }
+            housing: { name: 'Boende / Жилье (Hyra)', color: '#6366f1', icon: 'house', type: 'expense', emoji: '🏠' },
+            products: { name: 'Mat (ICA, Willys, Coop)', color: '#f59e0b', icon: 'cart-shopping', type: 'expense', emoji: '🛒' },
+            transport: { name: 'Transport (SL, Bensin)', color: '#3b82f6', icon: 'car', type: 'expense', emoji: '🚗' },
+            utility: { name: 'El & Bredband / Коммуналка', color: '#eab308', icon: 'bolt', type: 'expense', emoji: '⚡' },
+            insurance: { name: 'Försäkringar (Folksam)', color: '#f43f5e', icon: 'shield-halved', type: 'expense', emoji: '🛡️' },
+            kids: { name: 'Barn & Skola / Дети', color: '#ec4899', icon: 'child', type: 'expense', emoji: '🧸' },
+            fika: { name: 'Mat ute & Nöjen (Fika)', color: '#a855f7', icon: 'mug-hot', type: 'expense', emoji: '☕' },
+            savings: { name: 'Sparande / ISK', color: '#14b8a6', icon: 'chart-line', type: 'expense', emoji: '📈' },
+            shopping: { name: 'Shopping & Övrigt', color: '#64748b', icon: 'bag-shopping', type: 'expense', emoji: '🛍️' }
         };
 
         const EMOJI_OPTIONS = ['🛒', '🏠', '🚗', '⚡', '🛡️', '🧸', '☕', '📈', '🛍️', '💰', '👶', '💵', '🏋️', '✈️', '🐾', '🎮', '🎁', '🔧', '💊', '📚', '👗', '🚲', '🍕', '🍿'];
 
-        // Get current year and month for initial state
         const now = new Date();
         const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
@@ -678,18 +638,15 @@
             { id: 'tx_3', user: 'p1', title: 'Покупки в ICA Maxi', amount: 2450, type: 'expense', category: 'products', date: `${currentMonthStr}-03`, isRecurring: false },
             { id: 'tx_4', user: 'p1', title: 'Электричество (Vattenfall)', amount: 1100, type: 'expense', category: 'utility', date: `${currentMonthStr}-15`, isRecurring: true },
             { id: 'tx_5', user: 'p1', title: 'Пополнение ISK (Avanza)', amount: 4000, type: 'expense', category: 'savings', date: `${currentMonthStr}-26`, isRecurring: true },
-            { id: 'tx_6', user: 'p1', title: 'Fika в Espresso House', amount: 320, type: 'expense', category: 'fika', date: `${currentMonthStr}-10`, isRecurring: false },
-            { id: 'tx_7', user: 'p2', title: 'Зарплата (Lön efter skatt)', amount: 33000, type: 'income', category: 'salary', date: `${currentMonthStr}-25`, isRecurring: true },
-            { id: 'tx_8', user: 'p2', title: 'Детские пособия (Barnbidrag)', amount: 1250, type: 'income', category: 'barnbidrag', date: `${currentMonthStr}-20`, isRecurring: true },
-            { id: 'tx_9', user: 'p2', title: 'Продукты в Willys', amount: 1850, type: 'expense', category: 'products', date: `${currentMonthStr}-08`, isRecurring: false },
-            { id: 'tx_10', user: 'p2', title: 'Оплата Förskola', amount: 1600, type: 'expense', category: 'kids', date: `${currentMonthStr}-12`, isRecurring: true },
-            { id: 'tx_11', user: 'p2', title: 'Страховка Folksam', amount: 750, type: 'expense', category: 'insurance', date: `${currentMonthStr}-18`, isRecurring: true },
-            { id: 'tx_12', user: 'p2', title: 'Проездной SL Månadsbiljett', amount: 1020, type: 'expense', category: 'transport', date: `${currentMonthStr}-01`, isRecurring: true }
+            { id: 'tx_6', user: 'p2', title: 'Зарплата (Lön efter skatt)', amount: 33000, type: 'income', category: 'salary', date: `${currentMonthStr}-25`, isRecurring: true },
+            { id: 'tx_7', user: 'p2', title: 'Детские пособия (Barnbidrag)', amount: 1250, type: 'income', category: 'barnbidrag', date: `${currentMonthStr}-20`, isRecurring: true },
+            { id: 'tx_8', user: 'p2', title: 'Продукты в Willys', amount: 1850, type: 'expense', category: 'products', date: `${currentMonthStr}-08`, isRecurring: false },
+            { id: 'tx_9', user: 'p2', title: 'Страховка Folksam', amount: 750, type: 'expense', category: 'insurance', date: `${currentMonthStr}-18`, isRecurring: true },
+            { id: 'tx_10', user: 'p2', title: 'Проездной SL Månadsbiljett', amount: 1020, type: 'expense', category: 'transport', date: `${currentMonthStr}-01`, isRecurring: true }
         ];
 
-        // GLOBAL APP STATE
         window.AppState = {
-            roomCode: localStorage.getItem('se_family_room_code') || 'demo-room',
+            roomCode: localStorage.getItem('se_family_room_code') || 'demo-family',
             settings: { p1Name: 'Антон', p2Name: 'Мария' },
             categories: { ...DEFAULT_CATEGORIES },
             transactions: [...DEMO_TRANSACTIONS],
@@ -699,90 +656,73 @@
             selectedEmoji: '🛍️',
             editingId: null,
             pendingAction: null,
-            unsubListener: null,
-            isCloudConnected: false,
-            user: null
+            gunNode: null
         };
 
         let familyChartInstance = null;
         let partnerComparisonChartInstance = null;
 
-        async function initFirebase() {
-            try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    const userCred = await signInWithCustomToken(auth, __initial_auth_token);
-                    window.AppState.user = userCred.user;
-                } else {
-                    const userCred = await signInAnonymously(auth);
-                    window.AppState.user = userCred.user;
-                }
-                setupFirestoreRealtimeSync();
-            } catch (err) {
-                console.warn('Firebase connection notice:', err);
-                updateSyncBadge(false);
-            }
-        }
+        const gun = Gun([
+            'https://gun-manhattan.herokuapp.com/gun',
+            'https://gundb-relay-uncensored.herokuapp.com/gun'
+        ]);
 
-        function setupFirestoreRealtimeSync() {
-            if (window.AppState.unsubListener) {
-                window.AppState.unsubListener();
+        function initGunSync() {
+            const code = window.AppState.roomCode.toLowerCase().trim();
+            document.getElementById('headerRoomCodeDisplay').textContent = code;
+
+            if (window.AppState.gunNode) {
+                window.AppState.gunNode.off();
             }
 
-            const roomCode = window.AppState.roomCode.toLowerCase().trim();
-            document.getElementById('headerRoomCodeDisplay').textContent = roomCode;
+            window.AppState.gunNode = gun.get('familj_budget_v4_' + code);
 
-            // RULE 1 Path: /artifacts/{appId}/public/data/family_rooms/{roomCode}
-            const roomDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'family_rooms', roomCode);
+            window.AppState.gunNode.on((data) => {
+                if (data && data.payload) {
+                    try {
+                        const parsed = JSON.parse(data.payload);
+                        if (parsed.transactions) window.AppState.transactions = parsed.transactions;
+                        if (parsed.categories) window.AppState.categories = { ...DEFAULT_CATEGORIES, ...parsed.categories };
+                        if (parsed.settings) window.AppState.settings = parsed.settings;
 
-            window.AppState.unsubListener = onSnapshot(roomDocRef, (snapshot) => {
-                if (snapshot.exists()) {
-                    const data = snapshot.data();
-                    if (data.transactions) window.AppState.transactions = data.transactions;
-                    if (data.categories) window.AppState.categories = { ...DEFAULT_CATEGORIES, ...data.categories };
-                    if (data.settings) window.AppState.settings = data.settings;
-                    
-                    updatePartnerLabels();
-                    populateCategoryDropdowns();
-                    renderAll();
-                    updateSyncBadge(true);
-                } else {
-                    pushStateToFirestore();
-                    updateSyncBadge(true);
+                        updatePartnerLabels();
+                        populateCategoryDropdowns();
+                        renderAll();
+                        updateSyncBadge(true);
+                    } catch (e) {
+                        console.warn("GunDB parse error", e);
+                    }
                 }
-            }, (error) => {
-                console.error("Firestore sync error:", error);
-                updateSyncBadge(false);
             });
+
+            updateSyncBadge(true);
         }
 
-        async function pushStateToFirestore() {
-            if (!window.AppState.user) return;
-            const roomCode = window.AppState.roomCode.toLowerCase().trim();
-            const roomDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'family_rooms', roomCode);
+        function pushStateToGun() {
+            const code = window.AppState.roomCode.toLowerCase().trim();
+            const payload = JSON.stringify({
+                transactions: window.AppState.transactions,
+                categories: window.AppState.categories,
+                settings: window.AppState.settings,
+                updatedAt: new Date().toISOString()
+            });
 
-            try {
-                await setDoc(roomDocRef, {
-                    transactions: window.AppState.transactions,
-                    categories: window.AppState.categories,
-                    settings: window.AppState.settings,
-                    updatedAt: new Date().toISOString()
-                }, { merge: true });
-                updateSyncBadge(true);
-            } catch (e) {
-                console.warn("Save to Firestore failed:", e);
-                updateSyncBadge(false);
-            }
+            gun.get('familj_budget_v4_' + code).put({ payload: payload });
+            
+            localStorage.setItem('se_family_budget_tx', JSON.stringify(window.AppState.transactions));
+            localStorage.setItem('se_family_budget_settings', JSON.stringify(window.AppState.settings));
+            localStorage.setItem('se_family_budget_categories', JSON.stringify(window.AppState.categories));
+            updateSyncBadge(true);
         }
 
         function updateSyncBadge(connected) {
-            window.AppState.isCloudConnected = connected;
             const badge = document.getElementById('syncStatusBadge');
             if (connected) {
-                badge.className = "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
-                badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Синхронно`;
+                badge.className = "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
+                badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Синхронизировано (Облако)`;
             } else {
-                badge.className = "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20";
-                badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span> Локально`;
+                badge.className = "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20";
+                badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span> Локальный режим`;
             }
         }
 
@@ -802,16 +742,13 @@
 
         window.copyRecurringPaymentsToCurrentMonth = function() {
             const targetMonth = window.AppState.selectedMonth;
-            
-            // Find all recurring transactions in the entire database
             const recurringTemplates = window.AppState.transactions.filter(t => t.isRecurring);
 
             if (recurringTemplates.length === 0) {
-                showToast('Нет отмеченных постоянных платежей. Поставьте галочку [x] Постоянный платеж в любой операции.', 'error');
+                showToast('Нет отмеченных постоянных платежей', 'error');
                 return;
             }
 
-            // Deduplicate templates by title, amount, category, type, user
             const uniqueTemplates = [];
             const seenKeys = new Set();
 
@@ -823,13 +760,10 @@
                 }
             });
 
-            // Find existing transactions in target month
             const targetMonthTx = window.AppState.transactions.filter(t => t.date && t.date.startsWith(targetMonth));
-
             let addedCount = 0;
 
             uniqueTemplates.forEach(tmpl => {
-                // Check if already exists in target month
                 const exists = targetMonthTx.some(t => 
                     t.user === tmpl.user && 
                     t.title.toLowerCase() === tmpl.title.toLowerCase() && 
@@ -855,11 +789,11 @@
             });
 
             if (addedCount > 0) {
-                saveAndSync();
+                pushStateToGun();
                 renderAll();
-                showToast(`Скопировано ${addedCount} постоянных платежей в ${formatMonthName(targetMonth)}!`);
+                showToast(`Перенесено ${addedCount} постоянных платежей в ${formatMonthName(targetMonth)}!`);
             } else {
-                showToast(`Все постоянные платежи уже перенесены в ${formatMonthName(targetMonth)}.`, 'error');
+                showToast(`Все постоянные платежи уже есть в ${formatMonthName(targetMonth)}.`, 'error');
             }
         };
 
@@ -896,9 +830,7 @@
         };
 
         window.handleCategorySelectChange = function(val) {
-            if (val === '__NEW__') {
-                openNewCategoryModal();
-            }
+            if (val === '__NEW__') openNewCategoryModal();
         };
 
         window.handleCreateCategorySubmit = function(e) {
@@ -909,7 +841,7 @@
             if (!name) return;
 
             const catKey = 'cat_' + Date.now();
-            const newCat = {
+            window.AppState.categories[catKey] = {
                 name: name,
                 color: type === 'expense' ? '#f43f5e' : '#10b981',
                 icon: 'folder',
@@ -917,14 +849,12 @@
                 emoji: window.AppState.selectedEmoji || '🛍️'
             };
 
-            window.AppState.categories[catKey] = newCat;
-
             setFormType(type);
             populateCategoryDropdowns();
             document.getElementById('txCategory').value = catKey;
 
             closeNewCategoryModal();
-            saveAndSync();
+            pushStateToGun();
             renderSettingsCategoryList();
             showToast(`Категория "${name}" создана!`);
         };
@@ -933,7 +863,6 @@
             const txCat = document.getElementById('txCategory');
             const famCat = document.getElementById('familyFilterCategory');
             const cats = window.AppState.categories;
-
             const activeFormType = window.AppState.currentFormType;
 
             const options = Object.keys(cats)
@@ -947,48 +876,6 @@
                 Object.keys(cats)
                 .map(k => `<option value="${k}">${cats[k].emoji ? cats[k].emoji + ' ' : ''}${cats[k].name}</option>`)
                 .join('');
-        }
-
-        window.deleteCategory = function(catKey) {
-            if (DEFAULT_CATEGORIES[catKey]) {
-                showToast('Базовую категорию нельзя удалить', 'error');
-                return;
-            }
-
-            delete window.AppState.categories[catKey];
-            saveAndSync();
-            populateCategoryDropdowns();
-            renderSettingsCategoryList();
-            renderAll();
-            showToast('Категория удалена');
-        };
-
-        function renderSettingsCategoryList() {
-            const container = document.getElementById('settingsCategoryList');
-            const cats = window.AppState.categories;
-
-            container.innerHTML = Object.keys(cats).map(k => {
-                const cat = cats[k];
-                const isDefault = !!DEFAULT_CATEGORIES[k];
-
-                return `
-                    <div class="flex items-center justify-between p-2 rounded-xl bg-slate-900 border border-slate-800 text-xs">
-                        <div class="flex items-center gap-2">
-                            <span>${cat.emoji || '🛍️'}</span>
-                            <span class="font-medium text-slate-200">${cat.name}</span>
-                            <span class="text-[9px] px-1.5 py-0.2 rounded ${cat.type === 'expense' ? 'bg-rose-500/10 text-rose-400' : 'bg-emerald-500/10 text-emerald-400'}">
-                                ${cat.type === 'expense' ? 'Расход' : 'Доход'}
-                            </span>
-                        </div>
-                        ${!isDefault ? `
-                            <button onclick="deleteCategory('${k}')" class="text-slate-500 hover:text-rose-400 p-1">
-                                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-                            </button>
-                        ` : '<span class="text-[9px] text-slate-600">Базовая</span>'}
-                    </div>
-                `;
-            }).join('');
-            lucide.createIcons();
         }
 
         window.setFormType = function(type) {
@@ -1033,12 +920,7 @@
                 if (idx !== -1) {
                     window.AppState.transactions[idx] = {
                         ...window.AppState.transactions[idx],
-                        title,
-                        amount,
-                        type: window.AppState.currentFormType,
-                        category,
-                        date,
-                        isRecurring
+                        title, amount, type: window.AppState.currentFormType, category, date, isRecurring
                     };
                     showToast('Запись обновлена');
                 }
@@ -1047,18 +929,13 @@
                 const newTx = {
                     id: 'tx_' + Date.now(),
                     user: activeUser,
-                    title,
-                    amount,
-                    type: window.AppState.currentFormType,
-                    category,
-                    date,
-                    isRecurring
+                    title, amount, type: window.AppState.currentFormType, category, date, isRecurring
                 };
                 window.AppState.transactions.unshift(newTx);
                 showToast('Операция добавлена');
             }
 
-            saveAndSync();
+            pushStateToGun();
             resetForm();
             renderAll();
         };
@@ -1074,9 +951,7 @@
             const tx = window.AppState.transactions.find(t => t.id === id);
             if (!tx) return;
 
-            if (window.AppState.currentTab === 'family') {
-                switchTab(tx.user);
-            }
+            if (window.AppState.currentTab === 'family') switchTab(tx.user);
 
             window.AppState.editingId = id;
             setFormType(tx.type);
@@ -1105,7 +980,7 @@
         window.requestDelete = function(id) {
             window.AppState.pendingAction = () => {
                 window.AppState.transactions = window.AppState.transactions.filter(t => t.id !== id);
-                saveAndSync();
+                pushStateToGun();
                 renderAll();
                 showToast('Запись удалена');
             };
@@ -1113,9 +988,7 @@
         };
 
         function formatSEK(val) {
-            return new Intl.NumberFormat('sv-SE', {
-                maximumFractionDigits: 0
-            }).format(val) + ' kr';
+            return new Intl.NumberFormat('sv-SE', { maximumFractionDigits: 0 }).format(val) + ' kr';
         }
 
         window.switchTab = function(tab) {
@@ -1131,7 +1004,7 @@
             const activeTabClass = "bg-cyan-500 text-slate-950 shadow-lg shadow-cyan-500/20";
             const inactiveTabClass = "text-slate-400 hover:text-slate-200 hover:bg-slate-800/50";
 
-            btnFamily.className = `flex-1 min-w-[160px] py-3 px-4 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all duration-200 ${tab === 'family' ? activeTabClass : inactiveTabClass}`;
+            btnFamily.className = `flex-1 min-w-[170px] py-3 px-4 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all duration-200 ${tab === 'family' ? activeTabClass : inactiveTabClass}`;
             btnP1.className = `flex-1 min-w-[140px] py-3 px-4 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all duration-200 ${tab === 'p1' ? activeTabClass : inactiveTabClass}`;
             btnP2.className = `flex-1 min-w-[140px] py-3 px-4 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all duration-200 ${tab === 'p2' ? activeTabClass : inactiveTabClass}`;
 
@@ -1172,8 +1045,6 @@
             } else {
                 renderPersonalView(window.AppState.currentTab);
             }
-            
-            lucide.createIcons();
         };
 
         function getMonthFilteredTransactions() {
@@ -1234,7 +1105,6 @@
 
         function renderTransactionFeed(list, containerId, showUserBadge) {
             const container = document.getElementById(containerId);
-            
             if (containerId === 'familyTransactionList') {
                 document.getElementById('family-count-badge').textContent = list.length;
             }
@@ -1243,7 +1113,7 @@
                 container.innerHTML = `
                     <div class="text-center py-12 space-y-2">
                         <div class="w-10 h-10 bg-slate-900 rounded-full flex items-center justify-center mx-auto text-slate-500">
-                            <i data-lucide="inbox" class="w-5 h-5"></i>
+                            <i class="fa-solid fa-inbox text-lg"></i>
                         </div>
                         <p class="text-xs text-slate-400">Нет операций за ${formatMonthName(window.AppState.selectedMonth)}</p>
                     </div>
@@ -1258,10 +1128,7 @@
                 const userName = isP1 ? window.AppState.settings.p1Name : window.AppState.settings.p2Name;
                 const userBadgeColor = isP1 ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30' : 'bg-purple-500/10 text-purple-400 border-purple-500/30';
 
-                const dateFormatted = new Date(tx.date).toLocaleDateString('ru-RU', {
-                    day: 'numeric',
-                    month: 'short'
-                });
+                const dateFormatted = new Date(tx.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
 
                 return `
                     <div class="flex items-center justify-between p-3 rounded-xl bg-slate-900/60 border border-slate-800/80 hover:border-slate-700 transition-all group">
@@ -1273,7 +1140,7 @@
                                 <div class="flex items-center gap-2">
                                     <h4 class="text-xs font-bold text-slate-200 truncate">${escapeHtml(tx.title)}</h4>
                                     ${showUserBadge ? `<span class="text-[9px] font-bold px-1.5 py-0.2 rounded border ${userBadgeColor}">${userName}</span>` : ''}
-                                    ${tx.isRecurring ? `<span class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-purple-500/10 text-purple-300 border border-purple-500/20 flex items-center gap-1"><i data-lucide="refresh-cw" class="w-2.5 h-2.5"></i> Постоянный</span>` : ''}
+                                    ${tx.isRecurring ? `<span class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-purple-500/10 text-purple-300 border border-purple-500/20 flex items-center gap-1"><i class="fa-solid fa-rotate-right text-[8px]"></i> Постоянный</span>` : ''}
                                 </div>
                                 <div class="flex items-center gap-2 mt-0.5">
                                     <span class="text-[10px] text-slate-400">${dateFormatted}</span>
@@ -1290,10 +1157,10 @@
                             </span>
                             <div class="flex items-center gap-1 opacity-80 sm:opacity-0 group-hover:opacity-100 transition-opacity">
                                 <button onclick="startEdit('${tx.id}')" class="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-slate-200">
-                                    <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
+                                    <i class="fa-solid fa-pen-to-square text-xs"></i>
                                 </button>
                                 <button onclick="requestDelete('${tx.id}')" class="p-1 hover:bg-rose-950/50 rounded text-slate-400 hover:text-rose-400">
-                                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                    <i class="fa-solid fa-trash-can text-xs"></i>
                                 </button>
                             </div>
                         </div>
@@ -1339,15 +1206,8 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: { color: '#94a3b8', font: { size: 10 }, boxWidth: 10, padding: 8 }
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: (c) => ` ${c.label}: ${formatSEK(c.raw)}`
-                            }
-                        }
+                        legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 10 }, boxWidth: 10, padding: 8 } },
+                        tooltip: { callbacks: { label: (c) => ` ${c.label}: ${formatSEK(c.raw)}` } }
                     },
                     cutout: '65%'
                 }
@@ -1367,7 +1227,6 @@
             const p1Data = categoriesUsed.map(cat => 
                 expenses.filter(t => t.user === 'p1' && t.category === cat).reduce((a, b) => a + Number(b.amount), 0)
             );
-            
             const p2Data = categoriesUsed.map(cat => 
                 expenses.filter(t => t.user === 'p2' && t.category === cat).reduce((a, b) => a + Number(b.amount), 0)
             );
@@ -1379,34 +1238,16 @@
                 data: {
                     labels: labels,
                     datasets: [
-                        {
-                            label: window.AppState.settings.p1Name,
-                            data: p1Data,
-                            backgroundColor: '#06b6d4',
-                            borderRadius: 4
-                        },
-                        {
-                            label: window.AppState.settings.p2Name,
-                            data: p2Data,
-                            backgroundColor: '#a855f7',
-                            borderRadius: 4
-                        }
+                        { label: window.AppState.settings.p1Name, data: p1Data, backgroundColor: '#06b6d4', borderRadius: 4 },
+                        { label: window.AppState.settings.p2Name, data: p2Data, backgroundColor: '#a855f7', borderRadius: 4 }
                     ]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: {
-                            position: 'top',
-                            align: 'end',
-                            labels: { color: '#94a3b8', font: { size: 10 }, boxWidth: 10 }
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: (c) => ` ${c.dataset.label}: ${formatSEK(c.raw)}`
-                            }
-                        }
+                        legend: { position: 'top', align: 'end', labels: { color: '#94a3b8', font: { size: 10 }, boxWidth: 10 } },
+                        tooltip: { callbacks: { label: (c) => ` ${c.dataset.label}: ${formatSEK(c.raw)}` } }
                     },
                     scales: {
                         x: { grid: { display: false }, ticks: { color: '#64748b', font: { size: 9 } } },
@@ -1425,7 +1266,6 @@
                 const matchesSearch = tx.title.toLowerCase().includes(search);
                 const matchesUser = user === 'all' || tx.user === user;
                 const matchesCategory = category === 'all' || tx.category === category;
-
                 return matchesSearch && matchesUser && matchesCategory;
             }).sort((a, b) => new Date(b.date) - new Date(a.date));
         }
@@ -1442,13 +1282,6 @@
             document.getElementById('input-p2-name').value = window.AppState.settings.p2Name;
         }
 
-        function saveAndSync() {
-            localStorage.setItem('se_family_budget_tx', JSON.stringify(window.AppState.transactions));
-            localStorage.setItem('se_family_budget_settings', JSON.stringify(window.AppState.settings));
-            localStorage.setItem('se_family_budget_categories', JSON.stringify(window.AppState.categories));
-            pushStateToFirestore();
-        }
-
         window.openRoomModal = function() {
             document.getElementById('inputRoomCode').value = window.AppState.roomCode;
             document.getElementById('roomModal').classList.remove('hidden');
@@ -1463,7 +1296,7 @@
             if (code) {
                 window.AppState.roomCode = code;
                 localStorage.setItem('se_family_room_code', code);
-                setupFirestoreRealtimeSync();
+                initGunSync();
                 closeRoomModal();
                 showToast(`Подключено к семейной комнате: ${code}`);
             }
@@ -1485,11 +1318,44 @@
             if (p1) window.AppState.settings.p1Name = p1;
             if (p2) window.AppState.settings.p2Name = p2;
 
-            saveAndSync();
+            pushStateToGun();
             updatePartnerLabels();
             closeSettingsModal();
             renderAll();
-            showToast('Имена партнеров обновлены');
+            showToast('Имена обновлены');
+        };
+
+        function renderSettingsCategoryList() {
+            const container = document.getElementById('settingsCategoryList');
+            const cats = window.AppState.categories;
+
+            container.innerHTML = Object.keys(cats).map(k => {
+                const cat = cats[k];
+                const isDefault = !!DEFAULT_CATEGORIES[k];
+
+                return `
+                    <div class="flex items-center justify-between p-2 rounded-xl bg-slate-900 border border-slate-800 text-xs">
+                        <div class="flex items-center gap-2">
+                            <span>${cat.emoji || '🛍️'}</span>
+                            <span class="font-medium text-slate-200">${cat.name}</span>
+                        </div>
+                        ${!isDefault ? `
+                            <button onclick="deleteCategory('${k}')" class="text-slate-500 hover:text-rose-400 p-1">
+                                <i class="fa-solid fa-trash-can text-xs"></i>
+                            </button>
+                        ` : '<span class="text-[9px] text-slate-600">Базовая</span>'}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        window.deleteCategory = function(catKey) {
+            delete window.AppState.categories[catKey];
+            pushStateToGun();
+            populateCategoryDropdowns();
+            renderSettingsCategoryList();
+            renderAll();
+            showToast('Категория удалена');
         };
 
         window.openExportModal = function() {
@@ -1525,14 +1391,12 @@
                         window.AppState.transactions = parsed.transactions;
                         if (parsed.settings) window.AppState.settings = parsed.settings;
                         if (parsed.categories) window.AppState.categories = parsed.categories;
-                        saveAndSync();
+                        pushStateToGun();
                         updatePartnerLabels();
                         populateCategoryDropdowns();
                         renderAll();
                         closeExportModal();
-                        showToast('Бэкап импортирован');
-                    } else {
-                        showToast('Неверный формат файла', 'error');
+                        showToast('Бэкап успешно загружен');
                     }
                 } catch(err) {
                     showToast('Ошибка при прочтении файла', 'error');
@@ -1569,18 +1433,12 @@
             
             const isError = type === 'error';
             const bgClass = isError ? 'bg-rose-900/90 text-rose-100 border-rose-700' : 'bg-slate-900/90 text-slate-100 border-cyan-500/50';
-            const iconName = isError ? 'alert-circle' : 'check-circle';
-            const iconColor = isError ? 'text-rose-400' : 'text-cyan-400';
+            const iconClass = isError ? 'fa-triangle-exclamation text-rose-400' : 'fa-circle-check text-cyan-400';
 
             toast.className = `flex items-center gap-2.5 px-4 py-3 rounded-xl border backdrop-blur-md shadow-xl text-xs font-semibold transition-all duration-300 transform translate-y-2 opacity-0 ${bgClass}`;
-            toast.innerHTML = `
-                <i data-lucide="${iconName}" class="w-4 h-4 ${iconColor}"></i>
-                <span>${message}</span>
-            `;
+            toast.innerHTML = `<i class="fa-solid ${iconClass}"></i><span>${message}</span>`;
 
             container.appendChild(toast);
-            lucide.createIcons();
-
             setTimeout(() => toast.classList.remove('translate-y-2', 'opacity-0'), 10);
             setTimeout(() => {
                 toast.classList.add('opacity-0', 'translate-y-2');
@@ -1588,7 +1446,6 @@
             }, 3000);
         }
 
-        // INITIALIZATION ON LOAD
         window.onload = function() {
             const savedTx = localStorage.getItem('se_family_budget_tx');
             const savedSet = localStorage.getItem('se_family_budget_settings');
@@ -1603,7 +1460,7 @@
             populateCategoryDropdowns();
             renderAll();
 
-            initFirebase();
+            initGunSync();
         };
     </script>
 </body>
