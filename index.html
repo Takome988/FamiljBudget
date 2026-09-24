@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FamiljBudget 🇸🇪 - Семейный Бюджет</title>
+  <title>FamiljBudget 🇸🇪 - Общий Семейный Бюджет</title>
   <!-- Chart.js для графиков -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
@@ -39,13 +39,8 @@
     .btn-primary { background: var(--primary); border-color: var(--primary); }
     .btn-primary:hover { background: var(--primary-hover); }
     .btn-purple { background: var(--purple); border-color: var(--purple); }
-    .btn-success { background: var(--success); border-color: var(--success); }
 
-    .sync-status { display: flex; align-items: center; gap: 6px; font-size: 0.82rem; padding: 6px 12px; border-radius: 20px; background: rgba(255,255,255,0.05); border: 1px solid var(--card-border); }
-
-    /* Баннер приглашения */
-    .invite-banner { background: linear-gradient(135deg, #1e3a8a, #3b82f6); border-radius: 12px; padding: 16px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
-    .invite-banner p { font-size: 0.95rem; font-weight: 500; }
+    .sync-status { display: flex; align-items: center; gap: 6px; font-size: 0.82rem; padding: 6px 12px; border-radius: 20px; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); color: var(--success); }
 
     .nav-tabs { display: flex; gap: 8px; margin-bottom: 24px; background: var(--card-bg); padding: 6px; border-radius: 12px; border: 1px solid var(--card-border); }
     .tab-btn { flex: 1; background: transparent; border: none; color: var(--text-muted); padding: 10px; font-weight: 600; border-radius: 8px; cursor: pointer; text-align: center; transition: all 0.2s; }
@@ -108,6 +103,7 @@
       </div>
     </div>
 
+    <!-- Помесячный переключатель -->
     <div class="month-picker">
       <button class="month-btn" onclick="changeMonth(-1)">←</button>
       <div class="month-display" id="currentMonthLabel">Сентябрь 2026</div>
@@ -116,11 +112,8 @@
 
     <div class="header-actions">
       <div class="sync-status" id="syncStatusBadge">
-        <span id="syncDot">⚪</span> <span id="syncText">Подключение...</span>
+        <span id="syncDot">🟢</span> <span id="syncText">Общий Семейный Облачный Бюджет</span>
       </div>
-      <button class="btn btn-success" onclick="copyFamilyLink()">
-        📋 Скопировать ссылку для жены
-      </button>
       <button class="btn btn-purple" onclick="copyRecurringPayments()">
         📋 Перенести регулярные
       </button>
@@ -130,23 +123,14 @@
     </div>
   </header>
 
-  <!-- Информационный баннер -->
-  <div class="invite-banner" id="inviteBanner">
-    <div>
-      <p style="font-weight: 700;">🔗 Облачная семейная база данных активна!</p>
-      <p style="font-size: 0.85rem; opacity: 0.9;">Нажмите кнопку справа, чтобы скопировать персональную ссылку и отправить её вашей супруге.</p>
-    </div>
-    <button class="btn" style="background: white; color: #1e293b; font-weight: 600;" onclick="copyFamilyLink()">
-      📋 Скопировать ссылку
-    </button>
-  </div>
-
+  <!-- Переключатель партнеров -->
   <div class="nav-tabs">
     <button class="tab-btn active" onclick="switchTab('all')" id="tabAll">🏠 Общий семейный бюджет</button>
     <button class="tab-btn" onclick="switchTab('p1')" id="tabP1">👤 Партнер 1</button>
     <button class="tab-btn" onclick="switchTab('p2')" id="tabP2">👤 Партнер 2</button>
   </div>
 
+  <!-- Карточки итогов -->
   <div class="summary-grid">
     <div class="card">
       <div class="card-title">Доходы (Inkomster)</div>
@@ -166,6 +150,7 @@
     </div>
   </div>
 
+  <!-- Графики -->
   <div class="main-grid">
     <div class="card">
       <div class="card-title">Расходы по категориям</div>
@@ -362,11 +347,11 @@
   </div>
 
   <script>
-    const JSONBLOB_API = 'https://jsonblob.com/api/jsonBlob';
-    const STORAGE_KEY = 'familj_budget_se_v6';
+    // ПРЯМОЙ ЕДИНЫЙ ОБЛАЧНЫЙ СЕРВЕР СЕМЬИ
+    const CLOUD_URL = 'https://familj-budget-swe-default-rtdb.europe-west1.firebasedatabase.app/shared_family_budget.json';
+    const STORAGE_KEY = 'familj_budget_se_main_v1';
 
     let state = {
-      blobId: '',
       updatedAt: 0,
       activeTab: 'all',
       currentYear: 2026,
@@ -390,20 +375,13 @@
 
     let catChartInstance = null;
     let partnerChartInstance = null;
-    let syncInterval = null;
 
     const monthNames = [
       'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 
       'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
     ];
 
-    function getBlobIdFromUrl() {
-      const hash = window.location.hash.replace('#', '').trim();
-      if (hash) return hash;
-      return localStorage.getItem('family_blob_id') || '';
-    }
-
-    function loadState() {
+    function loadLocalState() {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         try { state = JSON.parse(saved); } catch(e){}
@@ -414,147 +392,86 @@
           { id: '3', date: '2026-09-25', amount: 32000, type: 'income', categoryId: 'cat_lon', partner: 'p1', note: 'Lön', isRecurring: true },
           { id: '4', date: '2026-09-25', amount: 28000, type: 'income', categoryId: 'cat_lon', partner: 'p2', note: 'Lön', isRecurring: true }
         ];
-        saveStateLocal();
+        saveLocalState();
       }
-      state.blobId = getBlobIdFromUrl();
     }
 
-    function saveStateLocal() {
+    function saveLocalState() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
       renderApp();
     }
 
     async function saveState() {
       state.updatedAt = Date.now();
-      saveStateLocal();
+      saveLocalState();
       await pushToCloud();
     }
 
-    // ИНИЦИАЛИЗАЦИЯ И СИНХРОНИЗАЦИЯ С JSONBLOB
-    async function initCloudDatabase() {
-      let currentId = getBlobIdFromUrl();
-
-      if (currentId) {
-        state.blobId = currentId;
-        window.location.hash = currentId;
-        localStorage.setItem('family_blob_id', currentId);
-        await pullFromCloud();
-      } else {
-        // Создаем новую базу данных для семьи в облаке
-        try {
-          const res = await fetch(JSONBLOB_API, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json'
-            },
-            body: JSON.stringify({
-              updatedAt: Date.now(),
-              settings: state.settings,
-              categories: state.categories,
-              transactions: state.transactions
-            })
-          });
-
-          const loc = res.headers.get('Location') || res.headers.get('x-jsonblob');
-          if (loc) {
-            const newId = loc.split('/').pop();
-            state.blobId = newId;
-            window.location.hash = newId;
-            localStorage.setItem('family_blob_id', newId);
-            updateSyncBadge(true);
-          }
-        } catch(e) {
-          console.error('Ошибка создания облака:', e);
-          updateSyncBadge(false);
-        }
+    // РАБОТА С ЕДИНЫМ ОБЛАКОМ
+    async function pushToCloud() {
+      try {
+        await fetch(CLOUD_URL, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            transactions: state.transactions,
+            categories: state.categories,
+            settings: state.settings,
+            updatedAt: state.updatedAt
+          })
+        });
+        updateSyncBadge(true);
+      } catch(e) {
+        console.error('Ошибка записи:', e);
+        updateSyncBadge(false);
       }
-
-      if (syncInterval) clearInterval(syncInterval);
-      syncInterval = setInterval(pullFromCloud, 3500); // авто-проверка каждые 3.5 секунды
     }
 
     async function pullFromCloud() {
-      if (!state.blobId) return;
-
       try {
-        const res = await fetch(`${JSONBLOB_API}/${state.blobId}`, {
-          headers: { 'Accept': 'application/json' }
-        });
-
+        const res = await fetch(CLOUD_URL);
         if (res.ok) {
           const cloudData = await res.json();
-          if (cloudData && cloudData.updatedAt && cloudData.updatedAt > (state.updatedAt || 0)) {
-            if (cloudData.transactions) state.transactions = cloudData.transactions;
-            if (cloudData.categories) state.categories = cloudData.categories;
-            if (cloudData.settings) state.settings = cloudData.settings;
-            state.updatedAt = cloudData.updatedAt;
-            saveStateLocal();
+          if (cloudData) {
+            if (!cloudData.updatedAt || cloudData.updatedAt >= (state.updatedAt || 0)) {
+              if (cloudData.transactions) state.transactions = cloudData.transactions;
+              if (cloudData.categories) state.categories = cloudData.categories;
+              if (cloudData.settings) state.settings = cloudData.settings;
+              if (cloudData.updatedAt) state.updatedAt = cloudData.updatedAt;
+              saveLocalState();
+            }
+          } else {
+            // Первый запуск — инициализируем базу
+            await pushToCloud();
           }
           updateSyncBadge(true);
         }
       } catch(e) {
-        console.error('Ошибка синхронизации:', e);
+        console.error('Ошибка чтения:', e);
         updateSyncBadge(false);
       }
-    }
-
-    async function pushToCloud() {
-      if (!state.blobId) {
-        await initCloudDatabase();
-        return;
-      }
-
-      try {
-        const res = await fetch(`${JSONBLOB_API}/${state.blobId}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          body: JSON.stringify({
-            updatedAt: state.updatedAt,
-            settings: state.settings,
-            categories: state.categories,
-            transactions: state.transactions
-          })
-        });
-
-        if (res.ok) {
-          updateSyncBadge(true);
-        }
-      } catch(e) {
-        console.error('Ошибка отправки:', e);
-        updateSyncBadge(false);
-      }
-    }
-
-    function copyFamilyLink() {
-      const fullUrl = window.location.origin + window.location.pathname + '#' + state.blobId;
-      navigator.clipboard.writeText(fullUrl).then(() => {
-        alert('✅ Персональная ссылка вашей семьи скопирована!\n\nОтправьте её вашей супруге. Перейдя по ней, она сразу попадет в ваш общий семейный бюджет.');
-      }).catch(() => {
-        prompt('Скопируйте эту ссылку и отправьте жене:', fullUrl);
-      });
     }
 
     function updateSyncBadge(isOk) {
       const dot = document.getElementById('syncDot');
       const text = document.getElementById('syncText');
-      if (state.blobId) {
-        dot.innerText = isOk ? '🟢' : '🟡';
-        text.innerText = isOk ? 'Облако подключено' : 'Связь с облаком...';
+      if (isOk) {
+        dot.innerText = '🟢';
+        text.innerText = 'Общий Семейный Облачный Бюджет';
       } else {
-        dot.innerText = '⚪';
-        text.innerText = 'Локальный режим';
+        dot.innerText = '🟡';
+        text.innerText = 'Переподключение к облаку...';
       }
     }
 
     window.addEventListener('DOMContentLoaded', async () => {
-      loadState();
+      loadLocalState();
       document.getElementById('txDate').valueAsDate = new Date();
       renderApp();
-      await initCloudDatabase();
+
+      // Первичное считывание и фоновый опрос каждые 3 секунды
+      await pullFromCloud();
+      setInterval(pullFromCloud, 3000);
     });
 
     function renderApp() {
